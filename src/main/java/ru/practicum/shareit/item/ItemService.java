@@ -2,35 +2,48 @@ package ru.practicum.shareit.item;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemDtoMapper;
 import ru.practicum.shareit.item.model.Item;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class ItemService {
     private final ItemStorage itemStorage;
+    private final ItemDtoMapper itemDtoMapper;
 
-    public ItemService(@Qualifier("InMemoryItemStorage") ItemStorage itemStorage) {
+    public ItemService(@Qualifier("InMemoryItemStorage") ItemStorage itemStorage, ItemDtoMapper itemDtoMapper) {
         this.itemStorage = itemStorage;
+        this.itemDtoMapper = itemDtoMapper;
     }
 
-    public Item createItem(Item item, Integer userId) {
-        return itemStorage.createItem(item, userId);
+    public ItemDto createItem(ItemDto itemDto, Integer ownerId) {
+        return itemDtoMapper.itemToDto(itemStorage.createItem(itemDtoMapper.dtoToItem(itemDto, ownerId)));
     }
 
-    public Item updateItem(Item item, Integer userId) {
-        return itemStorage.updateItem(item, userId);
+    public ItemDto updateItem(ItemDto itemDto, Integer ownerId) {
+        return itemDtoMapper.itemToDto(itemStorage.updateItem(itemDtoMapper.dtoToItem(itemDto, ownerId)));
     }
 
-    public Item getItemById(Integer itemId) {
-        return itemStorage.getItemById(itemId);
+    public ItemDto getItemById(Integer itemId) {
+        return itemDtoMapper.itemToDto(itemStorage.getItemById(itemId));
     }
 
-    public List<Item> getAllItemsOfUser(Integer userId) {
-        return itemStorage.getAllItemsOfUser(userId);
+    public List<ItemDto> getAllItemsOfUser(Integer userId) {
+        List<ItemDto> itemDtos = new ArrayList<>();
+        for (Item item : itemStorage.getAllItemsOfUser(userId)) {
+            itemDtos.add(itemDtoMapper.itemToDto(item));
+        }
+        return itemDtos;
     }
 
-    public List<Item> searchForItem(String searchCriteria) {
-        return itemStorage.searchForItem(searchCriteria);
+    public List<ItemDto> searchForItem(String searchCriteria) {
+        List<ItemDto> itemDtos = new ArrayList<>();
+        for (Item item : itemStorage.searchForItem(searchCriteria)) {
+            itemDtos.add(itemDtoMapper.itemToDto(item));
+        }
+        return itemDtos;
     }
 }

@@ -2,7 +2,6 @@ package ru.practicum.shareit.item;
 
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.exceptions.DataNotFoundException;
-import ru.practicum.shareit.exceptions.IncorrectDataException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.InMemoryUserStorage;
 
@@ -11,7 +10,6 @@ import java.util.*;
 @Component("InMemoryItemStorage")
 public class InMemoryItemStorage implements ItemStorage {
     private final Map<Integer, Item> items = new HashMap<>();
-    private final Map<Integer, Integer> itemUser = new HashMap<>();
     private Integer nextId = 0;
     private final InMemoryUserStorage inMemoryUserStorage;
 
@@ -20,23 +18,16 @@ public class InMemoryItemStorage implements ItemStorage {
     }
 
     @Override
-    public Item createItem(Item item, Integer userId) {
-        if (item.getAvailable() != null &&
-                item.getName() != null && !item.getName().isBlank() &&
-                item.getDescription() != null && !item.getDescription().isBlank()) {
-            inMemoryUserStorage.getUserById(userId);
-            item.setId(genId());
-            items.put(item.getId(), item);
-            itemUser.put(item.getId(), userId);
-            return item;
-        } else {
-            throw new IncorrectDataException("Отправленные данные для премета " + item + " некорректны");
-        }
+    public Item createItem(Item item) {
+        inMemoryUserStorage.getUserById(item.getOwnerId());
+        item.setId(genId());
+        items.put(item.getId(), item);
+        return item;
     }
 
     @Override
-    public Item updateItem(Item item, Integer userId) {
-        if (Objects.equals(itemUser.get(item.getId()), userId)) {
+    public Item updateItem(Item item) {
+        if (Objects.equals(items.get(item.getId()).getOwnerId(), item.getOwnerId())) {
             Item oldItem = items.get(item.getId());
             if (item.getName() != null) {
                 oldItem.setName(item.getName());
@@ -50,7 +41,7 @@ public class InMemoryItemStorage implements ItemStorage {
             items.put(item.getId(), oldItem);
             return oldItem;
         } else {
-            throw new DataNotFoundException("Предмет " + item + " не зарезервирован пользователем " + userId);
+            throw new DataNotFoundException("Предмет " + item + " не зарезервирован пользователем " + item.getOwnerId());
         }
     }
 
@@ -62,9 +53,9 @@ public class InMemoryItemStorage implements ItemStorage {
     @Override
     public List<Item> getAllItemsOfUser(Integer userId) {
         List<Item> result = new ArrayList<>();
-        for (Integer itemId : itemUser.keySet()) {
-            if (Objects.equals(itemUser.get(itemId), userId)) {
-                result.add(items.get(itemId));
+        for (Item item : items.values()) {
+            if (item.getOwnerId().equals(userId)) {
+                result.add(items.get(item.getId()));
             }
         }
         result.sort((u1, u2) -> u1.getId() - u2.getId());
@@ -76,7 +67,10 @@ public class InMemoryItemStorage implements ItemStorage {
         List<Item> result = new ArrayList<>();
         if (!searchCriteria.isBlank()) {
             for (Item item : items.values()) {
-                if (item.getAvailable() && item.getDescription().toLowerCase().contains(searchCriteria.toLowerCase())) {
+                if (item.getAvailable() &&
+                        (item.getDescription().toLowerCase().contains(searchCriteria.toLowerCase()) ||
+                                item.getName().toLowerCase().contains(searchCriteria.toLowerCase()))
+                ) {
                     result.add(item);
                 }
             }
