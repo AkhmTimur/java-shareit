@@ -20,18 +20,14 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User addToUsers(User user) {
-        if (user.getEmail() != null) {
-            if (!duplicateCheck(user)) {
-                user.setId(genId());
-                users.put(user.getId(), user);
-                log.trace("Пользователь {} создан", user);
-                return user;
-            } else {
-                log.trace("Пользователь {} уже создан", user);
-                throw new DataConflictException("This user " + user + " already was created");
-            }
+        if (!duplicateCheck(user)) {
+            user.setId(genId());
+            users.put(user.getId(), user);
+            log.trace("Пользователь {} создан", user);
+            return user;
         } else {
-            throw new IncorrectDataException("Получены некорректные данные " + user);
+            log.trace("Пользователь {} уже создан", user);
+            throw new DataConflictException("This user " + user + " already was created");
         }
     }
 
@@ -92,7 +88,7 @@ public class InMemoryUserStorage implements UserStorage {
 
     private boolean duplicateCheck(User user) {
         for (User userFromList : users.values()) {
-            if (userFromList.getEmail().equals(user.getEmail())) {
+            if (userFromList.getEmail() != null && userFromList.getEmail().equals(user.getEmail())) {
                 return true;
             }
         }

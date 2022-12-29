@@ -10,6 +10,7 @@ import java.util.*;
 @Component("InMemoryItemStorage")
 public class InMemoryItemStorage implements ItemStorage {
     private final Map<Integer, Item> items = new HashMap<>();
+    private final Map<Integer, List<Integer>> userItems = new HashMap<>();
     private Integer nextId = 0;
     private final InMemoryUserStorage inMemoryUserStorage;
 
@@ -22,6 +23,7 @@ public class InMemoryItemStorage implements ItemStorage {
         inMemoryUserStorage.getUserById(item.getOwnerId());
         item.setId(genId());
         items.put(item.getId(), item);
+        userItems.put(item.getOwnerId(), List.of(item.getId()));
         return item;
     }
 
@@ -53,10 +55,8 @@ public class InMemoryItemStorage implements ItemStorage {
     @Override
     public List<Item> getAllItemsOfUser(Integer userId) {
         List<Item> result = new ArrayList<>();
-        for (Item item : items.values()) {
-            if (item.getOwnerId().equals(userId)) {
-                result.add(items.get(item.getId()));
-            }
+        for (Integer itemId : userItems.get(userId)) {
+            result.add(items.get(itemId));
         }
         result.sort((u1, u2) -> u1.getId() - u2.getId());
         return result;
