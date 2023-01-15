@@ -7,9 +7,13 @@ import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findAllByBookerIdOrderByIdDesc(Long bookerId);
+
     Optional<Booking> findByIdAndBookerId(Long bookingId, Long userId);
+
     List<Booking> findByItemIdAndItemOwnerId(Long itemId, Long userId);
+
     List<Booking> findByItemIdAndBookerId(Long itemId, Long userId);
+
     List<Booking> findByItemOwnerId(Long userId);
 }
 
