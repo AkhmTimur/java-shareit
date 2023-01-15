@@ -24,7 +24,7 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleValidationException(final IncorrectDataException e) {
         log.debug("Запрос не поддерживается" + e.getMessage());
-        return Map.of("Запрос не поддерживается", e.getMessage());
+        return Map.of("error", e.getMessage());
     }
 
     @ExceptionHandler

@@ -1,43 +1,63 @@
 package ru.practicum.shareit.user;
 
-import org.springframework.beans.factory.annotation.Qualifier;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.dto.UserDtoMapper;
-import ru.practicum.shareit.user.model.User;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.exceptions.DataConflictException;
+import ru.practicum.shareit.exceptions.DataNotFoundException;
+import ru.practicum.shareit.exceptions.IncorrectDataException;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
-    private final UserStorage userStorage;
+    private final UserRepository userRepository;
     private final UserDtoMapper userDtoMapper;
 
-    public UserService(@Qualifier("InMemoryUserStorage") UserStorage userStorage, UserDtoMapper userDtoMapper) {
-        this.userStorage = userStorage;
-        this.userDtoMapper = userDtoMapper;
-    }
-
+    @Transactional
     public UserDto createUser(UserDto userDto) {
-        return userDtoMapper.userToDto(userStorage.addToUsers(userDtoMapper.dtoToUser(userDto)));
+        if (userDto.getEmail() == null) {
+            throw new IncorrectDataException("Некорректная данные");
+        }
+        try {
+            return userDtoMapper.userToDto(userRepository.save(userDtoMapper.dtoToUser(userDto)));
+        } catch (RuntimeException e) {
+
+            throw new DataConflictException(e.getMessage());
+        }
     }
 
     public UserDto updateUser(UserDto userDto) {
-        return userDtoMapper.userToDto(userStorage.updateUser(userDtoMapper.dtoToUser(userDto)));
+        if (userDto.getName() == null) {
+            userRepository.findById(userDto.getId()).ifPresent(user -> userDto.setName(user.getName()));
+        } else if (userDto.getEmail() == null) {
+            userRepository.findById(userDto.getId()).ifPresent(user -> userDto.setEmail(user.getEmail()));
+        }
+        return userDtoMapper.userToDto(
+                userRepository.save(
+                        userDtoMapper.dtoToUser(userDto)
+                )
+        );
     }
 
-    public UserDto getUserById(Integer userId) {
-        return userDtoMapper.userToDto(userStorage.getUserById(userId));
+    public UserDto getUserById(Long userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null) {
+            return userDtoMapper.userToDto(user);
+        } else {
+            throw new DataNotFoundException("Пользователь не найден");
+        }
     }
 
-    public void deleteUserById(Integer userId) {
-        userStorage.deleteUserById(userId);
+    public void deleteUserById(Long userId) {
+        userRepository.deleteById(userId);
     }
 
     public List<UserDto> getAllUsers() {
         List<UserDto> userDtos = new ArrayList<>();
-        for (User user : userStorage.getAllUsers()) {
+        for (User user : userRepository.findAll()) {
             userDtos.add(userDtoMapper.userToDto(user));
         }
         return userDtos;
