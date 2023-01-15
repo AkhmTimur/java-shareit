@@ -5,7 +5,6 @@ import lombok.Data;
 import ru.practicum.shareit.booking.item.dto.ItemDto;
 import ru.practicum.shareit.user.UserDto;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
