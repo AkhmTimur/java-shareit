@@ -17,8 +17,10 @@ import ru.practicum.shareit.exceptions.IncorrectDataException;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
+import java.awt.print.Book;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ItemService {
@@ -137,20 +139,24 @@ public class ItemService {
                 booking.setStatus(BookingStatus.CURRENT);
             }
         }
+
         for (Booking booking : bookingList) {
             if (item.isPresent() && user.isPresent() && !text.isBlank()) {
-                switch (booking.getStatus()) {
-                    case WAITING:
-                    case REJECTED:
-                    case CANCELED:
-                    case FUTURE:
-                        break;
-                    default:
-                        Comment comment = new Comment(text, item.get(), user.get());
-                        result = commentDtoMapper.commentToDto(commentRepository.save(comment));
-                        break;
+                Optional<Comment> commentByItemAndUser = commentRepository.findByItemIdAndAuthorId(item.get().getId(),
+                        user.get().getId());
+                if(commentByItemAndUser.isEmpty()) {
+                    switch (booking.getStatus()) {
+                        case WAITING:
+                        case REJECTED:
+                        case CANCELED:
+                        case FUTURE:
+                            break;
+                        default:
+                            Comment comment = new Comment(text, item.get(), user.get());
+                            result = commentDtoMapper.commentToDto(commentRepository.save(comment));
+                            break;
+                    }
                 }
-
             }
         }
         if (result != null) {

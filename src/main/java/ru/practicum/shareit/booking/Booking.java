@@ -39,19 +39,6 @@ public class Booking {
     @Enumerated(EnumType.STRING)
     private BookingStatus status;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
-        Booking booking = (Booking) o;
-        return id != null && Objects.equals(id, booking.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
-
     public Booking(Long id, LocalDateTime start, LocalDateTime end, Item item, User booker, BookingStatus status) {
         this.id = id;
         this.startDate = start;
