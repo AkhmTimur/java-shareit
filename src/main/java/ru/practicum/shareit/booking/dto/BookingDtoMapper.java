@@ -3,6 +3,8 @@ package ru.practicum.shareit.booking.dto;
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.item.dto.ItemDtoMapper;
+import ru.practicum.shareit.exceptions.DataNotFoundException;
+import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserDto;
 import ru.practicum.shareit.user.UserDtoMapper;
 import ru.practicum.shareit.user.UserRepository;
@@ -34,12 +36,14 @@ public class BookingDtoMapper {
     }
 
     public Booking dtoToBooking(BookingDto bookingDto) {
+        User user = userRepository.findById(bookingDto.getBooker().getId())
+                .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
         return new Booking(
                 bookingDto.getId(),
                 bookingDto.getStart(),
                 bookingDto.getEnd(),
                 itemDtoMapper.dtoToItem(bookingDto.getItem()),
-                userRepository.findById(bookingDto.getBooker().getId()).get(),
+                user,
                 bookingDto.getStatus()
         );
     }

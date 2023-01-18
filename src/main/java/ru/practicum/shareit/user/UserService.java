@@ -21,12 +21,7 @@ public class UserService {
         if (userDto.getEmail() == null) {
             throw new IncorrectDataException("Некорректная данные");
         }
-        try {
-            return userDtoMapper.userToDto(userRepository.save(userDtoMapper.dtoToUser(userDto)));
-        } catch (RuntimeException e) {
-
-            throw new DataConflictException(e.getMessage());
-        }
+        return userDtoMapper.userToDto(userRepository.save(userDtoMapper.dtoToUser(userDto)));
     }
 
     public UserDto updateUser(UserDto userDto) {

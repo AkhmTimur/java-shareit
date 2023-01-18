@@ -1,9 +1,6 @@
 package ru.practicum.shareit.booking;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.Hibernate;
 import ru.practicum.shareit.booking.dto.BookingStatus;
 import ru.practicum.shareit.booking.item.model.Item;
@@ -22,6 +19,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @Entity
 @Table(name = "bookings")
+@AllArgsConstructor
 public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,13 +36,4 @@ public class Booking {
     private User booker;
     @Enumerated(EnumType.STRING)
     private BookingStatus status;
-
-    public Booking(Long id, LocalDateTime start, LocalDateTime end, Item item, User booker, BookingStatus status) {
-        this.id = id;
-        this.startDate = start;
-        this.endDate = end;
-        this.item = item;
-        this.booker = booker;
-        this.status = status;
-    }
 }

@@ -1,8 +1,10 @@
 package ru.practicum.shareit.booking.item;
 
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoMapper;
 import ru.practicum.shareit.booking.dto.BookingStatus;
 import ru.practicum.shareit.booking.item.comments.CommentRepository;
@@ -23,6 +25,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 public class ItemService {
     private final ItemRepository itemRepository;
     private final ItemDtoMapper itemDtoMapper;
@@ -32,26 +35,10 @@ public class ItemService {
     private final BookingDtoMapper bookingDtoMapper;
     private final CommentDtoMapper commentDtoMapper;
 
-    public ItemService(ItemRepository itemRepository, ItemDtoMapper itemDtoMapper, UserRepository userRepository,
-                       BookingRepository bookingRepository, CommentRepository commentRepository,
-                       BookingDtoMapper bookingDtoMapper, CommentDtoMapper commentDtoMapper) {
-        this.itemRepository = itemRepository;
-        this.itemDtoMapper = itemDtoMapper;
-        this.userRepository = userRepository;
-        this.bookingRepository = bookingRepository;
-        this.commentRepository = commentRepository;
-        this.bookingDtoMapper = bookingDtoMapper;
-        this.commentDtoMapper = commentDtoMapper;
-    }
-
     public ItemDto createItem(ItemDto itemDto) {
         Long ownerId = itemDto.getOwnerId();
-        Optional<User> user = userRepository.findById(ownerId);
-        if (user.isPresent()) {
-            return itemDtoMapper.itemToDto(itemRepository.save(itemDtoMapper.dtoToItem(itemDto)));
-        } else {
-            throw new DataNotFoundException("Пользователь не найден");
-        }
+        userRepository.findById(ownerId).orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
+        return itemDtoMapper.itemToDto(itemRepository.save(itemDtoMapper.dtoToItem(itemDto)));
     }
 
     public ItemDto updateItem(ItemDto itemDto) {
@@ -94,10 +81,11 @@ public class ItemService {
 
     public List<ItemDto> getAllItemsOfUser(Long userId) {
         List<ItemDto> itemDtos = new ArrayList<>();
-        List<Booking> bookingList;
-        for (Item item : itemRepository.findByOwnerIdOrderById(userId)) {
+        List<Item> itemList = itemRepository.findByOwnerIdOrderById(userId);
+        List<Long> ids = itemList.stream().map(Item::getId).collect(Collectors.toList());
+        List<Booking> bookingList = bookingRepository.findByItemIdIn(ids);
+        for (Item item : itemList) {
             ItemDto itemDto = itemDtoMapper.itemToDto(item);
-            bookingList = bookingRepository.findByItemIdAndItemOwnerId(item.getId(), userId);
             itemDtos.add(itemDto);
             addLastAndNextBookingToItem(itemDto, bookingList);
         }
@@ -117,12 +105,18 @@ public class ItemService {
     }
 
     private void addLastAndNextBookingToItem(ItemDto itemDto, List<Booking> bookingList) {
-        if (bookingList.size() > 1) {
-            itemDto.setLastBooking(bookingDtoMapper.bookingToDto(bookingList.get(0)));
-            bookingList.sort((b1, b2) -> b2.getStartDate().compareTo(b1.getStartDate()));
-            itemDto.setNextBooking(bookingDtoMapper.bookingToDto(bookingList.get(0)));
-        } else if (bookingList.size() > 0) {
-            itemDto.setLastBooking(bookingDtoMapper.bookingToDto(bookingList.get(0)));
+        List<Booking> result = new ArrayList<>();
+        for (Booking booking : bookingList) {
+            if (booking.getItem().getId().equals(itemDto.getId())) {
+                result.add(booking);
+            }
+        }
+        if (result.size() > 1) {
+            itemDto.setLastBooking(bookingDtoMapper.bookingToDto(result.get(0)));
+            result.sort((b1, b2) -> b2.getStartDate().compareTo(b1.getStartDate()));
+            itemDto.setNextBooking(bookingDtoMapper.bookingToDto(result.get(0)));
+        } else if (result.size() > 0) {
+            itemDto.setLastBooking(bookingDtoMapper.bookingToDto(result.get(0)));
         }
     }
 
@@ -144,7 +138,7 @@ public class ItemService {
             if (item.isPresent() && user.isPresent() && !text.isBlank()) {
                 Optional<Comment> commentByItemAndUser = commentRepository.findByItemIdAndAuthorId(item.get().getId(),
                         user.get().getId());
-                if(commentByItemAndUser.isEmpty()) {
+                if (commentByItemAndUser.isEmpty()) {
                     switch (booking.getStatus()) {
                         case WAITING:
                         case REJECTED:

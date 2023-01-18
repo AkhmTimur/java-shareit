@@ -44,12 +44,23 @@ public class BookingService {
         LocalDateTime currentDateTime = LocalDateTime.now();
         Optional<Item> item = itemRepository.findById(bookingInDto.getItemId());
         BookingDto bookingDto = bookingDtoMapper.inDtoToDto(bookingInDto);
+        List<Booking> itemBookings = bookingRepository.findByItemId(bookingDto.getItemId());
+        for (Booking itemBooking : itemBookings) {
+            if (
+                    (bookingDto.getStart().isAfter(itemBooking.getStartDate())
+                            && bookingDto.getStart().isBefore(itemBooking.getEndDate()))
+                            ||
+                            (bookingDto.getEnd().isAfter(itemBooking.getStartDate())
+                                    && bookingDto.getEnd().isBefore(itemBooking.getEndDate()))
+            ) {
+                throw new IncorrectDataException("Переданы неверные данные");
+            }
+        }
         if (userRepository.findById(bookerId).isPresent()
                 && item.isPresent() && !item.get().getOwner().getId().equals(bookerId)) {
             bookingDto.setItem(itemDtoMapper.itemToDto(item.get()));
             if (
                     checkItemIsAvailable(bookingDto.getItem().getId())
-                            && !bookingDto.getEnd().isBefore(currentDateTime)
                             && !bookingDto.getEnd().isBefore(bookingDto.getStart())
                             && !bookingDto.getStart().isBefore(currentDateTime)
             ) {
@@ -68,40 +79,30 @@ public class BookingService {
 
     public BookingDto updateBooking(Long userId, Long bookingId, boolean approvedType) {
         Optional<Booking> booking = bookingRepository.findById(bookingId);
-        if(booking.isPresent()) {
-            if (!booking.get().getItem().getOwner().getId().equals(userId)) {
-                throw new DataNotFoundException("Переданы некорректные данные");
-            }
-            if (booking.get().getStatus().equals(BookingStatus.APPROVED)
-                    || booking.get().getStatus().equals(BookingStatus.REJECTED)) {
-                throw new IncorrectDataException("Переданы некорректные данные");
-            } else {
-                if (approvedType) {
-                    booking.get().setStatus(BookingStatus.APPROVED);
-                } else {
-                    booking.get().setStatus(BookingStatus.REJECTED);
-                }
-                Booking booking1 = bookingRepository.save(booking.get());
-                return bookingDtoMapper.bookingToDto(booking1);
-            }
-        } else {
+        booking.orElseThrow(() -> new DataNotFoundException("Переданы некорректные данные"));
+        if (!booking.get().getItem().getOwner().getId().equals(userId)) {
             throw new DataNotFoundException("Переданы некорректные данные");
         }
-
+        if (!booking.get().getStatus().equals(BookingStatus.WAITING)) {
+            throw new IncorrectDataException("Переданы некорректные данные");
+        }
+        if (approvedType) {
+            booking.get().setStatus(BookingStatus.APPROVED);
+        } else {
+            booking.get().setStatus(BookingStatus.REJECTED);
+        }
+        Booking booking1 = bookingRepository.save(booking.get());
+        return bookingDtoMapper.bookingToDto(booking1);
     }
 
     public BookingDto getBooking(Long userId, Long bookingId) {
         Optional<Booking> bookingOwner = bookingRepository.findById(bookingId);
+        bookingOwner.orElseThrow(() -> new DataNotFoundException("Переданы некорректные данные"));
         Item item;
-        if (bookingOwner.isPresent()) {
-            item = itemRepository.findById(bookingOwner.get().getItem().getId()).orElse(null);
-            if (item != null && item.getOwner().getId().equals(userId)) {
-                return bookingDtoMapper.bookingToDto(bookingOwner.get());
-            } else if (bookingOwner.get().getBooker().getId().equals(userId)) {
-                return bookingDtoMapper.bookingToDto(bookingOwner.get());
-            } else {
-                throw new DataNotFoundException("Данные не найдены");
-            }
+        item = itemRepository.findById(bookingOwner.get().getItem().getId()).orElse(null);
+        if ((item != null && item.getOwner().getId().equals(userId))
+                || bookingOwner.get().getBooker().getId().equals(userId)) {
+            return bookingDtoMapper.bookingToDto(bookingOwner.get());
         } else {
             throw new DataNotFoundException("Данные не найдены");
         }
@@ -109,10 +110,8 @@ public class BookingService {
 
     public List<BookingDto> getAllBookingsOwner(Long userId, String state) {
         LocalDateTime currentDateTime = LocalDateTime.now();
-        BookingStatus stateFromString = BookingStatus.ALL;
-        if (state != null) {
-            stateFromString = stateToStatus(state);
-        }
+        BookingStatus stateFromString;
+        stateFromString = stateToStatus(state);
         switch (stateFromString) {
             case FUTURE:
                 return getAllBookingsGeneral(
@@ -129,10 +128,10 @@ public class BookingService {
                                 currentDateTime),
                         userId);
             case ALL:
-                return getAllBookingsGeneral(bookingRepository.findByItemOwnerIdOrderByIdDesc(userId),userId);
+                return getAllBookingsGeneral(bookingRepository.findByItemOwnerIdOrderByIdDesc(userId), userId);
             default:
                 return getAllBookingsGeneral(bookingRepository.findByItemOwnerIdAndStatusOrderByIdDesc(userId,
-                        stateFromString),
+                                stateFromString),
                         userId);
         }
     }
@@ -159,21 +158,17 @@ public class BookingService {
                                 currentDateTime),
                         userId);
             case ALL:
-                return getAllBookingsGeneral(bookingRepository.findAllByBookerIdOrderByIdDesc(userId),userId);
+                return getAllBookingsGeneral(bookingRepository.findAllByBookerIdOrderByIdDesc(userId), userId);
             default:
                 return getAllBookingsGeneral(bookingRepository.findAllByBookerIdAndStatusOrderByIdDesc(userId,
-                        stateFromString),
+                                stateFromString),
                         userId);
         }
     }
 
     private List<BookingDto> getAllBookingsGeneral(List<Booking> bookingList, Long userId) {
-        Optional<User> user = userRepository.findById(userId);
-        if (user.isPresent()) {
-            return getBookingListByState(bookingList);
-        } else {
-            throw new DataNotFoundException("Пользователь не найден");
-        }
+        userRepository.findById(userId).orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
+        return getBookingListByState(bookingList);
     }
 
     private BookingStatus stateToStatus(String state) {
@@ -205,32 +200,6 @@ public class BookingService {
 
     private boolean checkItemIsAvailable(Long itemId) {
         return Objects.requireNonNull(itemRepository.findById(itemId).orElse(null)).getAvailable();
-    }
-
-    private List<Booking> getBookingsByStatus(List<Booking> bookingList, BookingStatus bookingStatus) {
-        List<Booking> result = new ArrayList<>();
-        LocalDateTime currentDatetime = LocalDateTime.now();
-        switch (bookingStatus) {
-            case CURRENT:
-                for (Booking booking : bookingList) {
-                    if (booking.getStartDate().isBefore(currentDatetime) && booking.getEndDate().isAfter(currentDatetime)) {
-                        result.add(booking);
-                    }
-                }
-                break;
-            case PAST:
-                for (Booking booking : bookingList) {
-                    if (booking.getEndDate().isBefore(currentDatetime)) {
-                        result.add(booking);
-                    }
-
-                }
-                break;
-            default:
-                result.addAll(bookingList);
-                break;
-        }
-        return result;
     }
 
     private List<BookingDto> getBookingListByState(List<Booking> bookingList) {
