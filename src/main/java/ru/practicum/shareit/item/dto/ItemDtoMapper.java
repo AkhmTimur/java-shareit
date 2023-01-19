@@ -1,11 +1,11 @@
-package ru.practicum.shareit.booking.item.dto;
+package ru.practicum.shareit.item.dto;
 
 import org.springframework.stereotype.Component;
-import ru.practicum.shareit.booking.item.comments.CommentRepository;
-import ru.practicum.shareit.booking.item.comments.dto.CommentDto;
-import ru.practicum.shareit.booking.item.comments.dto.CommentDtoMapper;
-import ru.practicum.shareit.booking.item.comments.model.Comment;
-import ru.practicum.shareit.booking.item.model.Item;
+import ru.practicum.shareit.item.comments.CommentRepository;
+import ru.practicum.shareit.item.comments.dto.CommentDto;
+import ru.practicum.shareit.item.comments.dto.CommentDtoMapper;
+import ru.practicum.shareit.item.comments.model.Comment;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.util.Collections;

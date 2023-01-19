@@ -1,9 +1,9 @@
-package ru.practicum.shareit.booking.item.dto;
+package ru.practicum.shareit.item.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import ru.practicum.shareit.booking.dto.BookingDto;
-import ru.practicum.shareit.booking.item.comments.dto.CommentDto;
+import ru.practicum.shareit.item.comments.dto.CommentDto;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;

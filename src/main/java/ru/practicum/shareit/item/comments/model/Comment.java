@@ -1,12 +1,10 @@
-package ru.practicum.shareit.booking.item.comments.model;
+package ru.practicum.shareit.item.comments.model;
 
 import lombok.*;
-import org.hibernate.Hibernate;
-import ru.practicum.shareit.booking.item.model.Item;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 
 import javax.persistence.*;
-import java.util.Objects;
 
 @Entity(name = "comments")
 @Getter

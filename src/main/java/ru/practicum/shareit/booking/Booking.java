@@ -1,14 +1,12 @@
 package ru.practicum.shareit.booking;
 
 import lombok.*;
-import org.hibernate.Hibernate;
 import ru.practicum.shareit.booking.dto.BookingStatus;
-import ru.practicum.shareit.booking.item.model.Item;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 /**
  * TODO Sprint add-bookings.

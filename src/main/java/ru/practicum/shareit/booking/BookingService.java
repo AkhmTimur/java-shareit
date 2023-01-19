@@ -1,16 +1,16 @@
 package ru.practicum.shareit.booking;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoMapper;
 import ru.practicum.shareit.booking.dto.BookingInDto;
 import ru.practicum.shareit.booking.dto.BookingStatus;
-import ru.practicum.shareit.booking.item.ItemRepository;
-import ru.practicum.shareit.booking.item.dto.ItemDtoMapper;
-import ru.practicum.shareit.booking.item.model.Item;
 import ru.practicum.shareit.exceptions.DataNotFoundException;
 import ru.practicum.shareit.exceptions.IncorrectDataException;
-import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.item.ItemRepository;
+import ru.practicum.shareit.item.dto.ItemDtoMapper;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserDtoMapper;
 import ru.practicum.shareit.user.UserRepository;
 
@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Service
+@Transactional(readOnly = true)
 public class BookingService {
     private final BookingDtoMapper bookingDtoMapper;
     private final ItemDtoMapper itemDtoMapper;
@@ -40,21 +41,17 @@ public class BookingService {
         this.userRepository = userRepository;
     }
 
+    @Transactional
     public BookingDto createBooking(BookingInDto bookingInDto, Long bookerId) {
         LocalDateTime currentDateTime = LocalDateTime.now();
         Optional<Item> item = itemRepository.findById(bookingInDto.getItemId());
         BookingDto bookingDto = bookingDtoMapper.inDtoToDto(bookingInDto);
         List<Booking> itemBookings = bookingRepository.findByItemId(bookingDto.getItemId());
         for (Booking itemBooking : itemBookings) {
-            if (
-                    (bookingDto.getStart().isAfter(itemBooking.getStartDate())
-                            && bookingDto.getStart().isBefore(itemBooking.getEndDate()))
-                            ||
-                            (bookingDto.getEnd().isAfter(itemBooking.getStartDate())
-                                    && bookingDto.getEnd().isBefore(itemBooking.getEndDate()))
-            ) {
-                throw new IncorrectDataException("Переданы неверные данные");
+            if ((!bookingDto.getStart().isBefore(itemBooking.getEndDate()) || !bookingDto.getEnd().isAfter(itemBooking.getStartDate()))) {
+                continue;
             }
+            throw new IncorrectDataException("Переданы неверные данные");
         }
         if (userRepository.findById(bookerId).isPresent()
                 && item.isPresent() && !item.get().getOwner().getId().equals(bookerId)) {
@@ -77,6 +74,7 @@ public class BookingService {
         }
     }
 
+    @Transactional
     public BookingDto updateBooking(Long userId, Long bookingId, boolean approvedType) {
         Optional<Booking> booking = bookingRepository.findById(bookingId);
         booking.orElseThrow(() -> new DataNotFoundException("Переданы некорректные данные"));

@@ -2,8 +2,8 @@ package ru.practicum.shareit.booking.dto;
 
 import org.springframework.stereotype.Component;
 import ru.practicum.shareit.booking.Booking;
-import ru.practicum.shareit.booking.item.dto.ItemDtoMapper;
 import ru.practicum.shareit.exceptions.DataNotFoundException;
+import ru.practicum.shareit.item.dto.ItemDtoMapper;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserDto;
 import ru.practicum.shareit.user.UserDtoMapper;

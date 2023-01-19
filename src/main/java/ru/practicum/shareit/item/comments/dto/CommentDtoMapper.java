@@ -1,7 +1,7 @@
-package ru.practicum.shareit.booking.item.comments.dto;
+package ru.practicum.shareit.item.comments.dto;
 
 import org.springframework.stereotype.Component;
-import ru.practicum.shareit.booking.item.comments.model.Comment;
+import ru.practicum.shareit.item.comments.model.Comment;
 
 import java.time.LocalDate;
 

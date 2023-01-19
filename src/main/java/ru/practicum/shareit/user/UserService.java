@@ -3,32 +3,31 @@ package ru.practicum.shareit.user;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.exceptions.DataConflictException;
 import ru.practicum.shareit.exceptions.DataNotFoundException;
-import ru.practicum.shareit.exceptions.IncorrectDataException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class UserService {
     private final UserRepository userRepository;
     private final UserDtoMapper userDtoMapper;
 
     @Transactional
     public UserDto createUser(UserDto userDto) {
-        if (userDto.getEmail() == null) {
-            throw new IncorrectDataException("Некорректная данные");
-        }
         return userDtoMapper.userToDto(userRepository.save(userDtoMapper.dtoToUser(userDto)));
     }
 
+    @Transactional
     public UserDto updateUser(UserDto userDto) {
+        Optional<User> user = userRepository.findById(userDto.getId());
         if (userDto.getName() == null) {
-            userRepository.findById(userDto.getId()).ifPresent(user -> userDto.setName(user.getName()));
+            user.ifPresent(u -> userDto.setName(u.getName()));
         } else if (userDto.getEmail() == null) {
-            userRepository.findById(userDto.getId()).ifPresent(user -> userDto.setEmail(user.getEmail()));
+            user.ifPresent(u -> userDto.setEmail(u.getEmail()));
         }
         return userDtoMapper.userToDto(
                 userRepository.save(
@@ -38,14 +37,12 @@ public class UserService {
     }
 
     public UserDto getUserById(Long userId) {
-        User user = userRepository.findById(userId).orElse(null);
-        if (user != null) {
-            return userDtoMapper.userToDto(user);
-        } else {
-            throw new DataNotFoundException("Пользователь не найден");
-        }
+        return userRepository.findById(userId)
+                .map(userDtoMapper::userToDto)
+                .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
     }
 
+    @Transactional
     public void deleteUserById(Long userId) {
         userRepository.deleteById(userId);
     }
