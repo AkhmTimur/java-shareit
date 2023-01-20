@@ -19,7 +19,7 @@ public class Comment {
     private String text;
     @ManyToOne
     private Item item;
-    @OneToOne
+    @ManyToOne
     private User author;
 
     public Comment(String text, Item item, User author) {

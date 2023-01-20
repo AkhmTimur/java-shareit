@@ -38,8 +38,9 @@ public class ItemService {
     @Transactional
     public ItemDto createItem(ItemDto itemDto) {
         Long ownerId = itemDto.getOwnerId();
-        userRepository.findById(ownerId).orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
-        return itemDtoMapper.itemToDto(itemRepository.save(itemDtoMapper.dtoToItem(itemDto)));
+        User user = userRepository.findById(ownerId)
+                .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
+        return itemDtoMapper.itemToDto(itemRepository.save(itemDtoMapper.dtoToItem(itemDto, user)));
     }
 
     @Transactional
@@ -48,6 +49,8 @@ public class ItemService {
         if (item.isPresent()) {
             Item itemGet = item.get();
             Long ownerId = itemDto.getOwnerId();
+            User user = userRepository.findById(ownerId)
+                    .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
             if (!Objects.equals(itemGet.getOwner().getId(), ownerId)) {
                 throw new DataNotFoundException("Предмет " + itemDto + " с владельцем " + ownerId + " не найден");
             }
@@ -61,7 +64,7 @@ public class ItemService {
                 itemDto.setName(itemGet.getName());
             }
             return itemDtoMapper.itemToDto(itemRepository.save(
-                    itemDtoMapper.dtoToItem(itemDto)));
+                    itemDtoMapper.dtoToItem(itemDto, user)));
         } else {
             throw new DataNotFoundException("Предмет не найден");
         }
@@ -93,7 +96,9 @@ public class ItemService {
         List<Booking> bookingList = bookingRepository.findByItemIdIn(ids);
         Map<Long, List<Booking>> bookingMap = createItemBookingsMap(bookingList);
 
-        List<Comment> comments = commentRepository.findByItemIdIn(itemList.stream().map(Item::getId).collect(Collectors.toList()));
+        Map<Long, List<Comment>> comments = commentRepository.findByItemIdIn(ids)
+                .stream()
+                .collect(Collectors.groupingBy(c -> c.getItem().getId()));
         for (Item item : itemList) {
             ItemDto itemDto = itemDtoMapper.itemToDto(item);
             itemDtos.add(itemDto);
@@ -104,21 +109,21 @@ public class ItemService {
     }
 
     private Map<Long, List<Booking>> createItemBookingsMap(List<Booking> itemBookings) {
-        Map<Long, List<Booking>> result = new HashMap<>();
-        for (Booking booking : itemBookings) {
-            List<Booking> itemBooking = itemBookings.stream().filter(b -> b.getItem().getId().equals(booking.getItem().getId())).collect(Collectors.toList());
-            result.put(booking.getItem().getId(), itemBooking);
-        }
-        return result;
+        return itemBookings.stream()
+                .collect(Collectors.groupingBy(b -> b.getItem().getId()));
     }
 
-    private void setCommentsToDto(List<ItemDto> itemDtos, List<Comment> commentDtos) {
+    private void setCommentsToDto(List<ItemDto> itemDtos, Map<Long, List<Comment>> commentDtos) {
         for (ItemDto itemDto : itemDtos) {
-            List<Comment> itemComments = commentDtos
-                    .stream()
-                    .filter(c -> itemDto.getId().equals(c.getItem().getId()))
-                    .collect(Collectors.toList());
-            itemDto.setComments(itemComments.stream().map(commentDtoMapper::commentToDto).collect(Collectors.toList()));
+            if(commentDtos.containsKey(itemDto.getId())) {
+                itemDto.setComments(
+                        commentDtos.get(itemDto.getId())
+                                .stream()
+                                .map(commentDtoMapper::commentToDto)
+                                .collect(Collectors.toList())
+                );
+            }
+
         }
     }
 
@@ -156,7 +161,7 @@ public class ItemService {
         bookingList.sort((b1, b2) -> b1.getEndDate().compareTo(b2.getEndDate()));
         List<Booking> filtered = bookingList
                 .stream()
-                .filter(b -> b.getEndDate().isBefore(LocalDateTime.now()))
+                .filter(b -> b.getStartDate().isBefore(LocalDateTime.now()))
                 .collect(Collectors.toList());
         if (filtered.size() > 0) {
             itemDto.setLastBooking(bookingDtoMapper.bookingToDto(filtered.get(0)));
@@ -175,13 +180,6 @@ public class ItemService {
                 .collect(Collectors.toList());
         CommentDto result = null;
         if(bookingList.size() > 0) {
-            for (Booking booking : bookingList) {
-                if (booking.getStartDate().isAfter(currentDateTime)) {
-                    booking.setStatus(BookingStatus.FUTURE);
-                } else if (booking.getStartDate().isBefore(currentDateTime) && booking.getEndDate().isAfter(currentDateTime)) {
-                    booking.setStatus(BookingStatus.CURRENT);
-                }
-            }
             if (item.isPresent() && user.isPresent() && !text.isBlank()) {
                 Optional<Comment> commentByItemAndUser = commentRepository.findByItemIdAndAuthorId(item.get().getId(),
                         user.get().getId());

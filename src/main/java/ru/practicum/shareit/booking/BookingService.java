@@ -11,6 +11,7 @@ import ru.practicum.shareit.exceptions.IncorrectDataException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.dto.ItemDtoMapper;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserDtoMapper;
 import ru.practicum.shareit.user.UserRepository;
 
@@ -44,7 +45,8 @@ public class BookingService {
     @Transactional
     public BookingDto createBooking(BookingInDto bookingInDto, Long bookerId) {
         LocalDateTime currentDateTime = LocalDateTime.now();
-        Optional<Item> item = itemRepository.findById(bookingInDto.getItemId());
+        Item item = itemRepository.findById(bookingInDto.getItemId())
+                .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
         BookingDto bookingDto = bookingDtoMapper.inDtoToDto(bookingInDto);
         List<Booking> itemBookings = bookingRepository.findByItemId(bookingDto.getItemId());
         for (Booking itemBooking : itemBookings) {
@@ -53,18 +55,18 @@ public class BookingService {
             }
             throw new IncorrectDataException("Переданы неверные данные");
         }
-        if (userRepository.findById(bookerId).isPresent()
-                && item.isPresent() && !item.get().getOwner().getId().equals(bookerId)) {
-            bookingDto.setItem(itemDtoMapper.itemToDto(item.get()));
+        User user = userRepository.findById(bookerId)
+                .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
+        if (!item.getOwner().getId().equals(bookerId)) {
+            bookingDto.setItem(itemDtoMapper.itemToDto(item));
             if (
                     checkItemIsAvailable(bookingDto.getItem().getId())
                             && !bookingDto.getEnd().isBefore(bookingDto.getStart())
                             && !bookingDto.getStart().isBefore(currentDateTime)
             ) {
-                userRepository.findById(bookerId)
-                        .ifPresent(user -> bookingDto.setBooker(userDtoMapper.userToDto(user)));
+                bookingDto.setBooker(userDtoMapper.userToDto(user));
                 bookingDto.setStatus(BookingStatus.WAITING);
-                Booking booking = bookingDtoMapper.dtoToBooking(bookingDto);
+                Booking booking = bookingDtoMapper.dtoToBooking(bookingDto, user);
                 return bookingDtoMapper.bookingToDto(bookingRepository.save(booking));
             } else {
                 throw new IncorrectDataException("Переданы некорректные данные");
@@ -76,31 +78,32 @@ public class BookingService {
 
     @Transactional
     public BookingDto updateBooking(Long userId, Long bookingId, boolean approvedType) {
-        Optional<Booking> booking = bookingRepository.findById(bookingId);
-        booking.orElseThrow(() -> new DataNotFoundException("Переданы некорректные данные"));
-        if (!booking.get().getItem().getOwner().getId().equals(userId)) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new DataNotFoundException("Переданы некорректные данные"));
+        if (!booking.getItem().getOwner().getId().equals(userId)) {
             throw new DataNotFoundException("Переданы некорректные данные");
         }
-        if (!booking.get().getStatus().equals(BookingStatus.WAITING)) {
+        if (!booking.getStatus().equals(BookingStatus.WAITING)) {
             throw new IncorrectDataException("Переданы некорректные данные");
         }
         if (approvedType) {
-            booking.get().setStatus(BookingStatus.APPROVED);
+            booking.setStatus(BookingStatus.APPROVED);
         } else {
-            booking.get().setStatus(BookingStatus.REJECTED);
+            booking.setStatus(BookingStatus.REJECTED);
         }
-        Booking booking1 = bookingRepository.save(booking.get());
+        Booking booking1 = bookingRepository.save(booking);
         return bookingDtoMapper.bookingToDto(booking1);
     }
 
     public BookingDto getBooking(Long userId, Long bookingId) {
-        Optional<Booking> bookingOwner = bookingRepository.findById(bookingId);
-        bookingOwner.orElseThrow(() -> new DataNotFoundException("Переданы некорректные данные"));
+        Booking bookingOwner = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new DataNotFoundException("Переданы некорректные данные"));
         Item item;
-        item = itemRepository.findById(bookingOwner.get().getItem().getId()).orElse(null);
-        if ((item != null && item.getOwner().getId().equals(userId))
-                || bookingOwner.get().getBooker().getId().equals(userId)) {
-            return bookingDtoMapper.bookingToDto(bookingOwner.get());
+        item = itemRepository.findById(bookingOwner.getItem().getId())
+                .orElseThrow(() -> new DataNotFoundException("Переданы некорректные данные"));
+        if (item.getOwner().getId().equals(userId)
+                || bookingOwner.getBooker().getId().equals(userId)) {
+            return bookingDtoMapper.bookingToDto(bookingOwner);
         } else {
             throw new DataNotFoundException("Данные не найдены");
         }
@@ -108,8 +111,7 @@ public class BookingService {
 
     public List<BookingDto> getAllBookingsOwner(Long userId, String state) {
         LocalDateTime currentDateTime = LocalDateTime.now();
-        BookingStatus stateFromString;
-        stateFromString = stateToStatus(state);
+        BookingStatus stateFromString = stateToStatus(state);
         switch (stateFromString) {
             case FUTURE:
                 return getAllBookingsGeneral(
@@ -136,10 +138,7 @@ public class BookingService {
 
     public List<BookingDto> getAllBookings(Long userId, String state) {
         LocalDateTime currentDateTime = LocalDateTime.now();
-        BookingStatus stateFromString = BookingStatus.ALL;
-        if (state != null) {
-            stateFromString = stateToStatus(state);
-        }
+        BookingStatus stateFromString = stateToStatus(state);
         switch (stateFromString) {
             case FUTURE:
                 return getAllBookingsGeneral(

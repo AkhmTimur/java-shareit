@@ -6,7 +6,7 @@ import ru.practicum.shareit.item.comments.dto.CommentDto;
 import ru.practicum.shareit.item.comments.dto.CommentDtoMapper;
 import ru.practicum.shareit.item.comments.model.Comment;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.UserRepository;
+import ru.practicum.shareit.user.User;
 
 import java.util.Collections;
 import java.util.List;
@@ -14,12 +14,10 @@ import java.util.stream.Collectors;
 
 @Component
 public class ItemDtoMapper {
-    private final UserRepository userRepository;
     private final CommentDtoMapper commentDtoMapper;
     private final CommentRepository commentRepository;
 
-    public ItemDtoMapper(UserRepository userRepository, CommentDtoMapper commentDtoMapper, CommentRepository commentRepository) {
-        this.userRepository = userRepository;
+    public ItemDtoMapper(CommentDtoMapper commentDtoMapper, CommentRepository commentRepository) {
         this.commentDtoMapper = commentDtoMapper;
         this.commentRepository = commentRepository;
     }
@@ -40,13 +38,13 @@ public class ItemDtoMapper {
         );
     }
 
-    public Item dtoToItem(ItemDto itemDto) {
+    public Item dtoToItem(ItemDto itemDto, User user) {
         return new Item(
                 itemDto.getId(),
                 itemDto.getName(),
                 itemDto.getDescription(),
                 itemDto.getAvailable(),
-                userRepository.findById(itemDto.getOwnerId()).orElse(null)
+                user
         );
     }
 }
