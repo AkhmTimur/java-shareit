@@ -1,43 +1,55 @@
 package ru.practicum.shareit.user;
 
-import org.springframework.beans.factory.annotation.Qualifier;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.dto.UserDtoMapper;
-import ru.practicum.shareit.user.model.User;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.exceptions.DataNotFoundException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class UserService {
-    private final UserStorage userStorage;
+    private final UserRepository userRepository;
     private final UserDtoMapper userDtoMapper;
 
-    public UserService(@Qualifier("InMemoryUserStorage") UserStorage userStorage, UserDtoMapper userDtoMapper) {
-        this.userStorage = userStorage;
-        this.userDtoMapper = userDtoMapper;
-    }
-
+    @Transactional
     public UserDto createUser(UserDto userDto) {
-        return userDtoMapper.userToDto(userStorage.addToUsers(userDtoMapper.dtoToUser(userDto)));
+        return userDtoMapper.userToDto(userRepository.save(userDtoMapper.dtoToUser(userDto)));
     }
 
+    @Transactional
     public UserDto updateUser(UserDto userDto) {
-        return userDtoMapper.userToDto(userStorage.updateUser(userDtoMapper.dtoToUser(userDto)));
+        Optional<User> user = userRepository.findById(userDto.getId());
+        if (userDto.getName() == null) {
+            user.ifPresent(u -> userDto.setName(u.getName()));
+        } else if (userDto.getEmail() == null) {
+            user.ifPresent(u -> userDto.setEmail(u.getEmail()));
+        }
+        return userDtoMapper.userToDto(
+                userRepository.save(
+                        userDtoMapper.dtoToUser(userDto)
+                )
+        );
     }
 
-    public UserDto getUserById(Integer userId) {
-        return userDtoMapper.userToDto(userStorage.getUserById(userId));
+    public UserDto getUserById(Long userId) {
+        return userRepository.findById(userId)
+                .map(userDtoMapper::userToDto)
+                .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
     }
 
-    public void deleteUserById(Integer userId) {
-        userStorage.deleteUserById(userId);
+    @Transactional
+    public void deleteUserById(Long userId) {
+        userRepository.deleteById(userId);
     }
 
     public List<UserDto> getAllUsers() {
         List<UserDto> userDtos = new ArrayList<>();
-        for (User user : userStorage.getAllUsers()) {
+        for (User user : userRepository.findAll()) {
             userDtos.add(userDtoMapper.userToDto(user));
         }
         return userDtos;
