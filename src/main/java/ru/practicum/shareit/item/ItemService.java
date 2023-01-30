@@ -7,6 +7,8 @@ import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingDtoMapper;
 import ru.practicum.shareit.booking.dto.BookingStatus;
+import ru.practicum.shareit.exceptions.DataNotFoundException;
+import ru.practicum.shareit.exceptions.IncorrectDataException;
 import ru.practicum.shareit.item.comments.CommentRepository;
 import ru.practicum.shareit.item.comments.dto.CommentDto;
 import ru.practicum.shareit.item.comments.dto.CommentDtoMapper;
@@ -14,8 +16,6 @@ import ru.practicum.shareit.item.comments.model.Comment;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemDtoMapper;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.exceptions.DataNotFoundException;
-import ru.practicum.shareit.exceptions.IncorrectDataException;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
@@ -45,29 +45,25 @@ public class ItemService {
 
     @Transactional
     public ItemDto updateItem(ItemDto itemDto) {
-        Optional<Item> item = itemRepository.findById(itemDto.getId());
-        if (item.isPresent()) {
-            Item itemGet = item.get();
-            Long ownerId = itemDto.getOwnerId();
-            User user = userRepository.findById(ownerId)
-                    .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
-            if (!Objects.equals(itemGet.getOwner().getId(), ownerId)) {
-                throw new DataNotFoundException("Предмет " + itemDto + " с владельцем " + ownerId + " не найден");
-            }
-            if (itemDto.getAvailable() == null) {
-                itemDto.setAvailable(itemGet.getAvailable());
-            }
-            if (itemDto.getDescription() == null) {
-                itemDto.setDescription(itemGet.getDescription());
-            }
-            if (itemDto.getName() == null) {
-                itemDto.setName(itemGet.getName());
-            }
-            return itemDtoMapper.itemToDto(itemRepository.save(
-                    itemDtoMapper.dtoToItem(itemDto, user)));
-        } else {
-            throw new DataNotFoundException("Предмет не найден");
+        Item item = itemRepository.findById(itemDto.getId())
+                .orElseThrow(() -> new DataNotFoundException("Предмет не найден"));
+        Long ownerId = itemDto.getOwnerId();
+        User user = userRepository.findById(ownerId)
+                .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
+        if (!Objects.equals(item.getOwner().getId(), ownerId)) {
+            throw new DataNotFoundException("Предмет " + itemDto + " с владельцем " + ownerId + " не найден");
         }
+        if (itemDto.getAvailable() == null) {
+            itemDto.setAvailable(item.getAvailable());
+        }
+        if (itemDto.getDescription() == null) {
+            itemDto.setDescription(item.getDescription());
+        }
+        if (itemDto.getName() == null) {
+            itemDto.setName(item.getName());
+        }
+        return itemDtoMapper.itemToDto(itemRepository.save(
+                itemDtoMapper.dtoToItem(itemDto, user)));
     }
 
     public ItemDto getItemById(Long itemId, Long userId) {
@@ -115,7 +111,7 @@ public class ItemService {
 
     private void setCommentsToDto(List<ItemDto> itemDtos, Map<Long, List<Comment>> commentDtos) {
         for (ItemDto itemDto : itemDtos) {
-            if(commentDtos.containsKey(itemDto.getId())) {
+            if (commentDtos.containsKey(itemDto.getId())) {
                 itemDto.setComments(
                         commentDtos.get(itemDto.getId())
                                 .stream()
@@ -179,7 +175,7 @@ public class ItemService {
                 .filter(b -> b.getEndDate().isBefore(currentDateTime))
                 .collect(Collectors.toList());
         CommentDto result = null;
-        if(bookingList.size() > 0) {
+        if (bookingList.size() > 0) {
             if (item.isPresent() && user.isPresent() && !text.isBlank()) {
                 Optional<Comment> commentByItemAndUser = commentRepository.findByItemIdAndAuthorId(item.get().getId(),
                         user.get().getId());

@@ -7,7 +7,6 @@ import ru.practicum.shareit.exceptions.DataNotFoundException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,17 +22,15 @@ public class UserService {
 
     @Transactional
     public UserDto updateUser(UserDto userDto) {
-        Optional<User> user = userRepository.findById(userDto.getId());
+        User user = userRepository.findById(userDto.getId()).orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
         if (userDto.getName() == null) {
-            user.ifPresent(u -> userDto.setName(u.getName()));
+            userDto.setName(user.getName());
         } else if (userDto.getEmail() == null) {
-            user.ifPresent(u -> userDto.setEmail(u.getEmail()));
+            userDto.setEmail(user.getEmail());
         }
-        return userDtoMapper.userToDto(
-                userRepository.save(
-                        userDtoMapper.dtoToUser(userDto)
-                )
-        );
+        User fromDto = userDtoMapper.dtoToUser(userDto);
+        User saved = userRepository.save(fromDto);
+        return userDtoMapper.userToDto(saved);
     }
 
     public UserDto getUserById(Long userId) {

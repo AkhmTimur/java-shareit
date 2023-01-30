@@ -1,5 +1,6 @@
 package ru.practicum.shareit.booking;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -19,7 +20,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -47,6 +48,8 @@ public class BookingService {
         LocalDateTime currentDateTime = LocalDateTime.now();
         Item item = itemRepository.findById(bookingInDto.getItemId())
                 .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
+        User user = userRepository.findById(bookerId)
+                .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
         BookingDto bookingDto = bookingDtoMapper.inDtoToDto(bookingInDto);
         List<Booking> itemBookings = bookingRepository.findByItemId(bookingDto.getItemId());
         for (Booking itemBooking : itemBookings) {
@@ -55,12 +58,11 @@ public class BookingService {
             }
             throw new IncorrectDataException("Переданы неверные данные");
         }
-        User user = userRepository.findById(bookerId)
-                .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
+
         if (!item.getOwner().getId().equals(bookerId)) {
             bookingDto.setItem(itemDtoMapper.itemToDto(item));
             if (
-                    checkItemIsAvailable(bookingDto.getItem().getId())
+                    checkItemIsAvailable(itemDtoMapper.dtoToItem(bookingDto.getItem(), user))
                             && !bookingDto.getEnd().isBefore(bookingDto.getStart())
                             && !bookingDto.getStart().isBefore(currentDateTime)
             ) {
@@ -109,7 +111,8 @@ public class BookingService {
         }
     }
 
-    public List<BookingDto> getAllBookingsOwner(Long userId, String state) {
+    public List<BookingDto> getAllBookingsOwner(Long userId, String state, Integer from, Integer size) {
+        fromAndSizeCheck(from, size);
         LocalDateTime currentDateTime = LocalDateTime.now();
         BookingStatus stateFromString = stateToStatus(state);
         switch (stateFromString) {
@@ -128,6 +131,10 @@ public class BookingService {
                                 currentDateTime),
                         userId);
             case ALL:
+                if (fromAndSizeCheck(from, size)) {
+                    List<Booking> bookings = bookingRepository.findAllByItemOwnerIdOrderByIdDesc(userId, PageRequest.of(from, size));
+                    return getAllBookingsGeneral(bookings, userId);
+                }
                 return getAllBookingsGeneral(bookingRepository.findByItemOwnerIdOrderByIdDesc(userId), userId);
             default:
                 return getAllBookingsGeneral(bookingRepository.findByItemOwnerIdAndStatusOrderByIdDesc(userId,
@@ -136,7 +143,8 @@ public class BookingService {
         }
     }
 
-    public List<BookingDto> getAllBookings(Long userId, String state) {
+    public List<BookingDto> getAllBookings(Long userId, String state, Integer from, Integer size) {
+        fromAndSizeCheck(from, size);
         LocalDateTime currentDateTime = LocalDateTime.now();
         BookingStatus stateFromString = stateToStatus(state);
         switch (stateFromString) {
@@ -155,12 +163,29 @@ public class BookingService {
                                 currentDateTime),
                         userId);
             case ALL:
+                if (fromAndSizeCheck(from, size)) {
+                    List<Booking> bookings = bookingRepository.findAllByOrderByIdDesc(PageRequest.of(from, size));
+                    return getAllBookingsGeneral(bookings, userId);
+                }
                 return getAllBookingsGeneral(bookingRepository.findAllByBookerIdOrderByIdDesc(userId), userId);
             default:
+
                 return getAllBookingsGeneral(bookingRepository.findAllByBookerIdAndStatusOrderByIdDesc(userId,
                                 stateFromString),
                         userId);
         }
+
+    }
+
+    private boolean fromAndSizeCheck(Integer from, Integer size) {
+        if (from != null && size != null) {
+            if (from < 0 || size < 1) {
+                throw new IncorrectDataException("Переданы некорректные данные");
+            } else {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<BookingDto> getAllBookingsGeneral(List<Booking> bookingList, Long userId) {
@@ -195,8 +220,11 @@ public class BookingService {
         return stateFromString;
     }
 
-    private boolean checkItemIsAvailable(Long itemId) {
-        return Objects.requireNonNull(itemRepository.findById(itemId).orElse(null)).getAvailable();
+    private boolean checkItemIsAvailable(Item item) {
+        if(item != null) {
+            return item.getAvailable();
+        }
+        return false;
     }
 
     private List<BookingDto> getBookingListByState(List<Booking> bookingList) {
