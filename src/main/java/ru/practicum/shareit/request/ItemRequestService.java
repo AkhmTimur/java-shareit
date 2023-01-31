@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,9 +38,6 @@ public class ItemRequestService {
     }
 
     public ItemRequestDto createItemRequest(Long userId, ItemRequestDto itemRequestDto) {
-        if (itemRequestDto.getDescription() == null || itemRequestDto.getDescription().isBlank()) {
-            throw new IncorrectDataException("Переданы некорректные данные");
-        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
         ItemRequest itemRequest = itemRequestDtoMapper.dtoToItemRequest(itemRequestDto, user);
@@ -54,13 +52,13 @@ public class ItemRequestService {
     }
 
     public List<ItemRequestDto> getAllItemRequest(Long userId, Integer from, Integer size) {
-        userRepository.findById(userId).orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
+        User user = userRepository.findById(userId).orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
         if (from != null && size != null && (from < 0 || size < 1)) {
             throw new IncorrectDataException("Переданы некорректные данные");
         }
         List<ItemRequest> itemRequests = Collections.emptyList();
         if (from != null && size != null) {
-            itemRequests = itemRequestRepository.findAllByRequesterIdIsNot(userId);
+            itemRequests = itemRequestRepository.findAllByRequesterIdIsNot(user);
         }
         return getItemRequestDtos(itemRequests);
     }
@@ -79,13 +77,14 @@ public class ItemRequestService {
                 .map(itemDtoMapper::itemToDto)
                 .collect(Collectors.toList());
         for (ItemRequestDto itemRequestDto : result) {
-            List<ItemDto> list = new ArrayList<>();
-            for (ItemDto itemDto : itemDtos) {
-                if (itemDto.getRequestId().equals(itemRequestDto.getId())) {
-                    list.add(itemDto);
-                }
+            Map<Long, List<ItemDto>> items = itemDtos
+                    .stream()
+                    .collect(Collectors.groupingBy(ItemDto::getRequestId));
+            if (items.containsKey(itemRequestDto.getId()) && items.get(itemRequestDto.getId()).size() > 0) {
+                itemRequestDto.setItems(items.get(itemRequestDto.getId()));
+            } else {
+                itemRequestDto.setItems(Collections.emptyList());
             }
-            itemRequestDto.setItems(list);
         }
         return result;
     }

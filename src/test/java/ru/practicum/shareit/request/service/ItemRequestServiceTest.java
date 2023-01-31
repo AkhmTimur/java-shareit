@@ -119,13 +119,13 @@ public class ItemRequestServiceTest {
     void getAllItemRequest_whenUserExistsAndCorrectPaginationData_thenReturnListItemRequestDto() {
         List<Item> itemList = List.of(itemToSave);
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(itemRequestRepository.findAllByRequesterIdIsNot(user.getId())).thenReturn(List.of(itemRequest));
+        when(itemRequestRepository.findAllByRequesterIdIsNot(user)).thenReturn(List.of(itemRequest));
         when(itemRepository.findByRequestIdIn(List.of(user.getId()))).thenReturn(itemList);
 
         List<ItemRequestDto> result = itemRequestService.getAllItemRequest(user.getId(), 0, 1);
 
         assertEquals(result, List.of(new ItemRequestDto(1L, "description", now, List.of(itemDto))));
-        verify(itemRequestRepository).findAllByRequesterIdIsNot(user.getId());
+        verify(itemRequestRepository).findAllByRequesterIdIsNot(user);
     }
 
     @Test

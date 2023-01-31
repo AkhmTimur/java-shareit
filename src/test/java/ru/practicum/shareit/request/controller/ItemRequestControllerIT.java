@@ -13,6 +13,7 @@ import ru.practicum.shareit.request.ItemRequestService;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 
 import javax.annotation.PostConstruct;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,7 +42,7 @@ public class ItemRequestControllerIT {
     @Test
     void createItemRequest() {
         Long userId = 0L;
-        ItemRequestDto itemRequestDto = new ItemRequestDto();
+        ItemRequestDto itemRequestDto = new ItemRequestDto(0L, "description", LocalDateTime.now().withNano(0));
         when(itemRequestService.createItemRequest(userId, itemRequestDto)).thenReturn(itemRequestDto);
 
         String result = mockMvc.perform(post("/requests")
@@ -53,7 +54,10 @@ public class ItemRequestControllerIT {
                 .getResponse()
                 .getContentAsString();
 
-        assertEquals(objectMapper.writeValueAsString(itemRequestDto), result);
+        ItemRequestDto itemRequestDto1 = objectMapper.readValue(result, ItemRequestDto.class);
+        assertEquals(itemRequestDto.getId(), itemRequestDto1.getId());
+        assertEquals(itemRequestDto.getDescription(), itemRequestDto1.getDescription());
+        assertEquals(itemRequestDto.getItems(), itemRequestDto1.getItems());
     }
 
     @SneakyThrows
