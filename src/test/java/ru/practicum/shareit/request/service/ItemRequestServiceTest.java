@@ -43,11 +43,13 @@ public class ItemRequestServiceTest {
     private ItemDtoMapper itemDtoMapper;
     @InjectMocks
     private ItemRequestService itemRequestService;
+
+    LocalDateTime now = LocalDateTime.now().withNano(0);
     User user = new User(1L, "@mail.ru", "name");
-    ItemRequest itemRequest = new ItemRequest(1L, "description", user, LocalDateTime.now().withNano(0));
+    ItemRequest itemRequest = new ItemRequest(1L, "description", user, now);
     Item itemToSave = new Item(1L, "name", "description", true, user, itemRequest);
 
-    ItemRequestDto itemRequestDto = new ItemRequestDto(1L, "description", LocalDateTime.now().withNano(0), Collections.emptyList());
+    ItemRequestDto itemRequestDto = new ItemRequestDto(1L, "description", now, Collections.emptyList());
     ItemDto itemDto = new ItemDto(1L, "name", "description", true, user.getId(), Collections.emptyList(), itemRequest.getId());
 
 
@@ -119,10 +121,10 @@ public class ItemRequestServiceTest {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(itemRequestRepository.findAllByRequesterIdIsNot(user.getId())).thenReturn(List.of(itemRequest));
         when(itemRepository.findByRequestIdIn(List.of(user.getId()))).thenReturn(itemList);
-        when(itemRequestService.getAllItemRequest(user.getId(), 0, 1)).thenReturn(List.of(itemRequestDto));
 
         List<ItemRequestDto> result = itemRequestService.getAllItemRequest(user.getId(), 0, 1);
-        assertEquals(result, List.of(itemRequestDto));
+
+        assertEquals(result, List.of(new ItemRequestDto(1L, "description", now, List.of(itemDto))));
         verify(itemRequestRepository).findAllByRequesterIdIsNot(user.getId());
     }
 

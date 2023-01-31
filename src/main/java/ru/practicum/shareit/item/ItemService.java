@@ -71,8 +71,10 @@ public class ItemService {
         if (item.isPresent()) {
             ItemDto itemDto = itemDtoMapper.itemToDto(item.get());
             if (item.get().getOwner().getId().equals(userId)) {
-                List<Booking> bookingList = bookingRepository.findByItemIdAndItemOwnerId(itemId, userId);
-                bookingList.removeIf(booking -> booking.getStatus().equals(BookingStatus.REJECTED));
+                List<Booking> bookingList = bookingRepository.findByItemIdAndItemOwnerId(itemId, userId)
+                        .stream()
+                        .filter(b -> !b.getStatus().equals(BookingStatus.REJECTED))
+                        .collect(Collectors.toList());
                 Map<Long, List<Booking>> bookingMap = createItemBookingsMap(bookingList);
                 List<Comment> comments = commentRepository.findByItemId(item.get().getId());
                 List<CommentDto> commentDtos = comments.stream().map(commentDtoMapper::commentToDto).collect(Collectors.toList());
@@ -181,7 +183,8 @@ public class ItemService {
                         user.get().getId());
                 if (commentByItemAndUser.isEmpty()) {
                     Comment comment = new Comment(text, item.get(), user.get());
-                    result = commentDtoMapper.commentToDto(commentRepository.save(comment));
+                    Comment c = commentRepository.save(comment);
+                    result = commentDtoMapper.commentToDto(c);
                 }
             }
         }

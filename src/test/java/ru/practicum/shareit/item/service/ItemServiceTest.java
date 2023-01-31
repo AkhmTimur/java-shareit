@@ -25,6 +25,7 @@ import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +33,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -208,13 +210,12 @@ public class ItemServiceTest {
         Long userId = user.getId();
         Long itemId = itemToSave.getId();
         Booking booking = new Booking(1L, yesterday, now, itemToSave, user, BookingStatus.APPROVED);
-        Comment comment = new Comment("text", itemToSave, user);
-        CommentDto expected = new CommentDto(1L, "text", user.getName(), null);
-        lenient().when(commentDtoMapper.commentToDto(comment)).thenReturn(expected);
+        CommentDto expected = new CommentDto(1L, "text", user.getName(), LocalDate.now());
+        lenient().when(commentDtoMapper.commentToDto(any(Comment.class))).thenReturn(expected);
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(itemToSave));
         when(userRepository.findById(itemId)).thenReturn(Optional.of(user));
         when(bookingRepository.findByItemIdAndBookerId(itemId, userId)).thenReturn(List.of(booking));
-        lenient().when(commentRepository.save(comment)).thenReturn(new Comment(1L, "text", itemToSave, user));
+        when(commentRepository.save(any(Comment.class))).thenReturn(new Comment(1L, "text", itemToSave, user));
 
         CommentDto result = itemService.createCommentToItem(itemId, "text", userId);
 

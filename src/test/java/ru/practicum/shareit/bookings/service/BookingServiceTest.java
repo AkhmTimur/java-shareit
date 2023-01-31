@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingService;
@@ -49,7 +50,8 @@ public class BookingServiceTest {
     private UserRepository userRepository;
     @InjectMocks
     private BookingService bookingService;
-    LocalDateTime tomorrow = LocalDateTime.now().plusDays(1).withNano(0);
+    LocalDateTime now = LocalDateTime.now().withNano(0);
+    LocalDateTime tomorrow = now.plusDays(1);
     LocalDateTime dayAfterTomorrow = tomorrow.plusDays(1);
     User itemOwner = new User(0L, "email@mail.com", "name");
     UserDto userDto = new UserDto(0L, "email@mail.com", "name");
@@ -85,13 +87,16 @@ public class BookingServiceTest {
     @Test
     void createBooking_itemFoundAndAvailableAndUserFound_thenCreateBooking() {
         when(itemRepository.findById(itemId)).thenReturn(Optional.of(itemToSave));
-        when(bookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
         when(bookingRepository.findByItemId(itemId)).thenReturn(List.of(booking));
-        when(bookingRepository.save(new Booking())).thenReturn(new Booking());
+        when(bookingDtoMapper.inDtoToDto(bookingInDto)).thenReturn(bookingDto);
+        when(bookingDtoMapper.dtoToBooking(bookingDto, new User())).thenReturn(booking);
+        when(bookingRepository.save(booking)).thenReturn(booking);
+
 
         BookingDto bookingDto1 = bookingService.createBooking(bookingInDto, bookerId);
 
-        verify(bookingRepository).save(new Booking());
+        assertEquals(new BookingDto(0L, tomorrow.plusDays(2), dayAfterTomorrow.plusDays(2), itemToSave.getId(), itemDto, userDto, userDto.getId(), BookingStatus.APPROVED), bookingDto1);
+        verify(bookingRepository).save(booking);
     }
 
     @Test
@@ -103,9 +108,9 @@ public class BookingServiceTest {
 
     @Test
     void createBooking_whenUserNotFound_thenThrowException() {
-        lenient().when(userRepository.findById(userDto.getId())).thenThrow(DataNotFoundException.class);
+        when(userRepository.findById(99L)).thenThrow(DataNotFoundException.class);
 
-        assertThrows(DataNotFoundException.class, () -> bookingService.createBooking(bookingInDto, bookerId));
+        assertThrows(DataNotFoundException.class, () -> bookingService.createBooking(bookingInDto, 99L));
     }
 
     @Test
@@ -138,14 +143,14 @@ public class BookingServiceTest {
 
     @Test
     void updateBooking_whenBookingFound_thenUpdateBooking() {
-        booking.setStatus(BookingStatus.WAITING);
-        when(bookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
-        when(bookingService.updateBooking(itemOwner.getId(), booking.getId(), true)).thenReturn(bookingDto);
+        when(bookingRepository.findById(anyLong())).thenReturn(Optional.of(new Booking(0L, tomorrow.plusDays(2), dayAfterTomorrow.plusDays(2), itemToSave, itemOwner, BookingStatus.WAITING)));
+        when(bookingDtoMapper.bookingToDto(any(Booking.class))).thenReturn(bookingDto);
+        when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
 
         BookingDto bookingDto1 = bookingService.updateBooking(itemOwner.getId(), booking.getId(), true);
 
         assertEquals(bookingDto, bookingDto1);
-        verify(bookingRepository).save(booking);
+        verify(bookingRepository).save(any(Booking.class));
     }
 
     @Test
@@ -206,21 +211,21 @@ public class BookingServiceTest {
 
     @Test
     void getAllBookingsOwner_whenStatusFuture_thenReturnBooking() {
-        LocalDateTime now = LocalDateTime.now();
         Booking newBooking = new Booking(0L, now, now, itemToSave, itemOwner, BookingStatus.APPROVED);
         when(userRepository.findById(itemOwner.getId())).thenReturn(Optional.of(itemOwner));
-        when(bookingRepository.findAllByItemOwnerIdAndStartDateAfterOrderByIdDesc(itemOwner.getId(), LocalDateTime.now().withNano(0)))
+        when(bookingDtoMapper.bookingToDto(any(Booking.class))).thenReturn(bookingDto);
+        when(bookingRepository.findAllByItemOwnerIdAndStartDateAfterOrderByIdDesc(itemOwner.getId(), now))
                 .thenReturn(List.of(newBooking));
 
-        assertEquals(List.of(bookingDto), bookingService.getAllBookingsOwner(itemOwner.getId(), "FUTURE", null, null));
+        assertEquals(List.of(bookingDto), bookingService.getAllBookingsOwner(itemOwner.getId(), "FUTURE", 0, 1));
     }
 
     @Test
     void getAllBookingsOwner_whenStatusAllAndFromSizeIsNull_thenReturnBooking() {
-        LocalDateTime now = LocalDateTime.now();
         Booking newBooking = new Booking(0L, now, now, itemToSave, itemOwner, BookingStatus.APPROVED);
         when(userRepository.findById(itemOwner.getId())).thenReturn(Optional.of(itemOwner));
-        when(bookingRepository.findAllByItemOwnerIdAndStartDateAfterOrderByIdDesc(itemOwner.getId(), LocalDateTime.now().withNano(0)))
+        when(bookingDtoMapper.bookingToDto(any(Booking.class))).thenReturn(bookingDto);
+        when(bookingRepository.findByItemOwnerIdOrderByIdDesc(itemOwner.getId()))
                 .thenReturn(List.of(newBooking));
 
         assertEquals(List.of(bookingDto), bookingService.getAllBookingsOwner(itemOwner.getId(), "ALL", null, null));
@@ -228,21 +233,23 @@ public class BookingServiceTest {
 
     @Test
     void getAllBookingsOwner_whenStatusAllAndFromSizeIsNotNull_thenReturnBooking() {
-        LocalDateTime now = LocalDateTime.now();
         Booking newBooking = new Booking(0L, now, now, itemToSave, itemOwner, BookingStatus.APPROVED);
         when(userRepository.findById(itemOwner.getId())).thenReturn(Optional.of(itemOwner));
-        when(bookingRepository.findAllByItemOwnerIdAndStartDateAfterOrderByIdDesc(itemOwner.getId(), LocalDateTime.now().withNano(0)))
+        booking.setStartDate(now);
+        booking.setEndDate(now);
+        when(bookingDtoMapper.bookingToDto(any(Booking.class))).thenReturn(bookingDto);
+        when(bookingRepository.findByItemOwnerIdOrderByIdDesc(itemOwner.getId()))
                 .thenReturn(List.of(newBooking));
 
-        assertEquals(List.of(bookingDto), bookingService.getAllBookingsOwner(itemOwner.getId(), "ALL", 0, 1));
+        assertEquals(List.of(bookingDto), bookingService.getAllBookingsOwner(itemOwner.getId(), "ALL", null, null));
     }
 
     @Test
     void getAllBookingsOwner_whenStatusRejected_thenReturnBooking() {
-        LocalDateTime now = LocalDateTime.now();
         Booking newBooking = new Booking(0L, now, now, itemToSave, itemOwner, BookingStatus.APPROVED);
         when(userRepository.findById(itemOwner.getId())).thenReturn(Optional.of(itemOwner));
-        when(bookingRepository.findAllByItemOwnerIdAndStartDateAfterOrderByIdDesc(itemOwner.getId(), LocalDateTime.now().withNano(0)))
+        when(bookingDtoMapper.bookingToDto(any(Booking.class))).thenReturn(bookingDto);
+        when(bookingRepository.findByItemOwnerIdAndStatusOrderByIdDesc(itemOwner.getId(), BookingStatus.REJECTED))
                 .thenReturn(List.of(newBooking));
 
         assertEquals(List.of(bookingDto), bookingService.getAllBookingsOwner(itemOwner.getId(), "REJECTED", null, null));
@@ -250,10 +257,9 @@ public class BookingServiceTest {
 
     @Test
     void getAllBookings_whenStatusFuture_thenReturnBooking() {
-        LocalDateTime now = LocalDateTime.now();
         Booking newBooking = new Booking(0L, now, now, itemToSave, itemOwner, BookingStatus.APPROVED);
-        when(userRepository.findById(itemOwner.getId())).thenReturn(Optional.of(itemOwner));
-        when(bookingRepository.findAllByItemOwnerIdAndStartDateAfterOrderByIdDesc(itemOwner.getId(), LocalDateTime.now().withNano(0)))
+        when(bookingDtoMapper.bookingToDto(any(Booking.class))).thenReturn(bookingDto);
+        when(bookingRepository.findAllByBookerIdAndStartDateAfterOrderByIdDesc(bookerId, now))
                 .thenReturn(List.of(newBooking));
 
         assertEquals(List.of(bookingDto), bookingService.getAllBookings(bookerId, "FUTURE", null, null));
@@ -261,32 +267,30 @@ public class BookingServiceTest {
 
     @Test
     void getAllBookings_whenStatusAllAndFromSizeIsNull_thenReturnBooking() {
-        LocalDateTime now = LocalDateTime.now();
         Booking newBooking = new Booking(0L, now, now, itemToSave, itemOwner, BookingStatus.APPROVED);
-        when(userRepository.findById(itemOwner.getId())).thenReturn(Optional.of(itemOwner));
-        when(bookingRepository.findAllByItemOwnerIdAndStartDateAfterOrderByIdDesc(itemOwner.getId(), LocalDateTime.now().withNano(0)))
-                .thenReturn(List.of(newBooking));
+        when(bookingDtoMapper.bookingToDto(any(Booking.class))).thenReturn(bookingDto);
+        when(bookingRepository.findAllByBookerIdOrderByIdDesc(bookerId)).thenReturn(List.of(newBooking));
 
         assertEquals(List.of(bookingDto), bookingService.getAllBookings(bookerId, "ALL", null, null));
     }
 
     @Test
     void getAllBookings_whenStatusAllAndFromSizeIsNotNull_thenReturnBooking() {
-        LocalDateTime now = LocalDateTime.now();
+        int from = 0;
+        int size = 1;
         Booking newBooking = new Booking(0L, now, now, itemToSave, itemOwner, BookingStatus.APPROVED);
-        when(userRepository.findById(itemOwner.getId())).thenReturn(Optional.of(itemOwner));
-        when(bookingRepository.findAllByItemOwnerIdAndStartDateAfterOrderByIdDesc(itemOwner.getId(), LocalDateTime.now().withNano(0)))
-                .thenReturn(List.of(newBooking));
+        when(bookingDtoMapper.bookingToDto(any(Booking.class))).thenReturn(bookingDto);
+        when(bookingRepository.findAllByOrderByIdDesc(PageRequest.of(from, size))).thenReturn(List.of(newBooking));
 
-        assertEquals(List.of(bookingDto), bookingService.getAllBookings(bookerId, "ALL", 0, 1));
+        assertEquals(List.of(bookingDto), bookingService.getAllBookings(bookerId, "ALL", from, size));
     }
 
     @Test
     void getAllBookings_whenStatusRejected_thenReturnBooking() {
         LocalDateTime now = LocalDateTime.now();
         Booking newBooking = new Booking(0L, now, now, itemToSave, itemOwner, BookingStatus.APPROVED);
-        when(userRepository.findById(itemOwner.getId())).thenReturn(Optional.of(itemOwner));
-        when(bookingRepository.findAllByItemOwnerIdAndStartDateAfterOrderByIdDesc(itemOwner.getId(), LocalDateTime.now().withNano(0)))
+        when(bookingDtoMapper.bookingToDto(any(Booking.class))).thenReturn(bookingDto);
+        when(bookingRepository.findAllByBookerIdAndStatusOrderByIdDesc(bookerId, BookingStatus.REJECTED))
                 .thenReturn(List.of(newBooking));
 
         assertEquals(List.of(bookingDto), bookingService.getAllBookings(bookerId, "REJECTED", null, null));

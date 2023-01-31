@@ -43,7 +43,7 @@ public class BookingService {
 
     @Transactional
     public BookingDto createBooking(BookingInDto bookingInDto, Long bookerId) {
-        LocalDateTime currentDateTime = LocalDateTime.now();
+        LocalDateTime currentDateTime = LocalDateTime.now().withNano(0);
         Item item = itemRepository.findById(bookingInDto.getItemId())
                 .orElseThrow(() -> new DataNotFoundException("Предмет не найден"));
         User user = userRepository.findById(bookerId)
@@ -141,7 +141,7 @@ public class BookingService {
 
     public List<BookingDto> getAllBookings(Long userId, String state, Integer from, Integer size) {
         fromAndSizeCheck(from, size);
-        LocalDateTime currentDateTime = LocalDateTime.now();
+        LocalDateTime currentDateTime = LocalDateTime.now().withNano(0);
         BookingStatus stateFromString = stateToStatus(state);
         switch (stateFromString) {
             case FUTURE:
