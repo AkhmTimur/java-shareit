@@ -225,10 +225,12 @@ public class BookingServiceTest {
         Booking newBooking = new Booking(0L, now, now, itemToSave, itemOwner, BookingStatus.APPROVED);
         when(userRepository.findById(itemOwner.getId())).thenReturn(Optional.of(itemOwner));
         when(bookingDtoMapper.bookingToDto(any(Booking.class))).thenReturn(bookingDto);
-        when(bookingRepository.findByItemOwnerIdOrderByIdDesc(itemOwner.getId()))
+        int from = 0;
+        int size = 1;
+        when(bookingRepository.findAllByItemOwnerIdOrderByIdDesc(itemOwner.getId(), PageRequest.of(from, size)))
                 .thenReturn(List.of(newBooking));
 
-        assertEquals(List.of(bookingDto), bookingService.getAllBookingsOwner(itemOwner.getId(), "ALL", null, null));
+        assertEquals(List.of(bookingDto), bookingService.getAllBookingsOwner(itemOwner.getId(), "ALL", from, size));
     }
 
     @Test
@@ -238,10 +240,12 @@ public class BookingServiceTest {
         booking.setStartDate(now);
         booking.setEndDate(now);
         when(bookingDtoMapper.bookingToDto(any(Booking.class))).thenReturn(bookingDto);
-        when(bookingRepository.findByItemOwnerIdOrderByIdDesc(itemOwner.getId()))
+        int from = 0;
+        int size = 1;
+        when(bookingRepository.findAllByItemOwnerIdOrderByIdDesc(itemOwner.getId(), PageRequest.of(from, size)))
                 .thenReturn(List.of(newBooking));
 
-        assertEquals(List.of(bookingDto), bookingService.getAllBookingsOwner(itemOwner.getId(), "ALL", null, null));
+        assertEquals(List.of(bookingDto), bookingService.getAllBookingsOwner(itemOwner.getId(), "ALL", from, size));
     }
 
     @Test
@@ -252,7 +256,7 @@ public class BookingServiceTest {
         when(bookingRepository.findByItemOwnerIdAndStatusOrderByIdDesc(itemOwner.getId(), BookingStatus.REJECTED))
                 .thenReturn(List.of(newBooking));
 
-        assertEquals(List.of(bookingDto), bookingService.getAllBookingsOwner(itemOwner.getId(), "REJECTED", null, null));
+        assertEquals(List.of(bookingDto), bookingService.getAllBookingsOwner(itemOwner.getId(), "REJECTED", 0, 1));
     }
 
     @Test
@@ -262,16 +266,18 @@ public class BookingServiceTest {
         when(bookingRepository.findAllByBookerIdAndStartDateAfterOrderByIdDesc(bookerId, now))
                 .thenReturn(List.of(newBooking));
 
-        assertEquals(List.of(bookingDto), bookingService.getAllBookings(bookerId, "FUTURE", null, null));
+        assertEquals(List.of(bookingDto), bookingService.getAllBookings(bookerId, "FUTURE", 0, 1));
     }
 
     @Test
     void getAllBookings_whenStatusAllAndFromSizeIsNull_thenReturnBooking() {
         Booking newBooking = new Booking(0L, now, now, itemToSave, itemOwner, BookingStatus.APPROVED);
         when(bookingDtoMapper.bookingToDto(any(Booking.class))).thenReturn(bookingDto);
-        when(bookingRepository.findAllByBookerIdOrderByIdDesc(bookerId)).thenReturn(List.of(newBooking));
+        int from = 0;
+        int size = 1;
+        when(bookingRepository.findAllByOrderByIdDesc(PageRequest.of(from, size))).thenReturn(List.of(newBooking));
 
-        assertEquals(List.of(bookingDto), bookingService.getAllBookings(bookerId, "ALL", null, null));
+        assertEquals(List.of(bookingDto), bookingService.getAllBookings(bookerId, "ALL", from, size));
     }
 
     @Test
@@ -293,6 +299,6 @@ public class BookingServiceTest {
         when(bookingRepository.findAllByBookerIdAndStatusOrderByIdDesc(bookerId, BookingStatus.REJECTED))
                 .thenReturn(List.of(newBooking));
 
-        assertEquals(List.of(bookingDto), bookingService.getAllBookings(bookerId, "REJECTED", null, null));
+        assertEquals(List.of(bookingDto), bookingService.getAllBookings(bookerId, "REJECTED", 0, 1));
     }
 }

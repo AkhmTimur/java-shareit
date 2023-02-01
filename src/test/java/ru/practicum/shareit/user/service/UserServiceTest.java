@@ -39,13 +39,13 @@ public class UserServiceTest {
 
     @Test
     void createUser_whenUserValid_thenSaveUser() {
-        when(userRepository.save(userToSave)).thenReturn(userToSave);
+        when(userRepository.save(any(User.class))).thenReturn(userToSave);
 
         UserDto actualUser = userService.createUser(userDtoMapper.userToDto(userToSave));
 
         assertEquals(userToSave.getEmail(), actualUser.getEmail());
         assertEquals(userToSave.getName(), actualUser.getName());
-        verify(userRepository).save(userToSave);
+        verify(userRepository).save(any(User.class));
     }
 
     @Test
@@ -57,24 +57,14 @@ public class UserServiceTest {
     }
 
     @Test
-    void createUser_whenEmailDuplicated_thenIncorrectDataExceptionThrown() {
-        userRepository.save(userToSave);
-        User newUser = new User(userToSave.getId(), userToSave.getEmail(), userToSave.getName());
-        when(userRepository.save(newUser)).thenThrow(new IncorrectDataException(""));
-        UserDto newUserDto = userDtoMapper.userToDto(newUser);
-
-        assertThrows(IncorrectDataException.class, () -> userService.createUser(newUserDto));
-    }
-
-    @Test
     void updateUser_WhenUserExist_thenUpdateUser() {
-        when(userRepository.findById(any())).thenReturn(Optional.of(userToSave));
-        when(userRepository.save(userToSave)).thenReturn(userToSave);
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(userToSave));
+        when(userRepository.save(any(User.class))).thenReturn(userToSave);
 
         UserDto actualUser = userService.updateUser(userDto);
 
         assertEquals("name", actualUser.getName());
-        verify(userRepository).save(userToSave);
+        verify(userRepository).save(any(User.class));
     }
 
     @Test

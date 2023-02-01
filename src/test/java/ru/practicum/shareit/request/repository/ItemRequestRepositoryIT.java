@@ -20,7 +20,7 @@ public class ItemRequestRepositoryIT {
     @Autowired
     private ItemRequestRepository itemRequestRepository;
     @Autowired
-            private UserRepository userRepository;
+    private UserRepository userRepository;
     ItemRequest itemRequest = new ItemRequest();
     User user = new User();
 
@@ -36,14 +36,14 @@ public class ItemRequestRepositoryIT {
     @Test
     void findByRequesterId() {
         Long userId = 0L;
-        List<ItemRequest> users = itemRequestRepository.findByRequesterId(userId);
+        List<ItemRequest> users = itemRequestRepository.findByRequesterIdOrderByCreatedDesc(userId);
 
         assertNotNull(users);
     }
 
     @Test
     void findAllByRequesterIdIsNot() {
-        List<ItemRequest> itemRequests = itemRequestRepository.findByRequesterId(user.getId());
+        List<ItemRequest> itemRequests = itemRequestRepository.findByRequesterIdOrderByCreatedDesc(user.getId());
 
         assertEquals(List.of(itemRequest), itemRequests);
     }

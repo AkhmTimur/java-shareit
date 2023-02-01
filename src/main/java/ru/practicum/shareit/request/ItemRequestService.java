@@ -13,7 +13,6 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +46,7 @@ public class ItemRequestService {
 
     public List<ItemRequestDto> getItemRequests(Long userId) {
         userRepository.findById(userId).orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
-        List<ItemRequest> itemRequests = itemRequestRepository.findByRequesterId(userId);
+        List<ItemRequest> itemRequests = itemRequestRepository.findByRequesterIdOrderByCreatedDesc(userId);
         return getItemRequestDtos(itemRequests);
     }
 
@@ -64,13 +63,10 @@ public class ItemRequestService {
     }
 
     private List<ItemRequestDto> getItemRequestDtos(List<ItemRequest> itemRequests) {
-        List<ItemRequestDto> result = new ArrayList<>();
-        if (itemRequests.size() > 0) {
-            result = itemRequests
-                    .stream()
-                    .map(itemRequestDtoMapper::itemRequestToDto)
-                    .collect(Collectors.toList());
-        }
+        List<ItemRequestDto> result = itemRequests
+                .stream()
+                .map(itemRequestDtoMapper::itemRequestToDto)
+                .collect(Collectors.toList());
         List<Long> ids = itemRequests.stream().map(ItemRequest::getId).collect(Collectors.toList());
         List<ItemDto> itemDtos = itemRepository.findByRequestIdIn(ids)
                 .stream()
@@ -80,11 +76,7 @@ public class ItemRequestService {
             Map<Long, List<ItemDto>> items = itemDtos
                     .stream()
                     .collect(Collectors.groupingBy(ItemDto::getRequestId));
-            if (items.containsKey(itemRequestDto.getId()) && items.get(itemRequestDto.getId()).size() > 0) {
-                itemRequestDto.setItems(items.get(itemRequestDto.getId()));
-            } else {
-                itemRequestDto.setItems(Collections.emptyList());
-            }
+            itemRequestDto.setItems(items.getOrDefault(itemRequestDto.getId(), Collections.emptyList()));
         }
         return result;
     }

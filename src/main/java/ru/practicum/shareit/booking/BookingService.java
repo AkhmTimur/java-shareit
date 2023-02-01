@@ -127,11 +127,8 @@ public class BookingService {
                                 currentDateTime),
                         userId);
             case ALL:
-                if (fromAndSizeCheck(from, size)) {
-                    List<Booking> bookings = bookingRepository.findAllByItemOwnerIdOrderByIdDesc(userId, PageRequest.of(from, size));
-                    return getAllBookingsGeneral(bookings, userId);
-                }
-                return getAllBookingsGeneral(bookingRepository.findByItemOwnerIdOrderByIdDesc(userId), userId);
+                List<Booking> bookings = bookingRepository.findAllByItemOwnerIdOrderByIdDesc(userId, PageRequest.of(from, size));
+                return getAllBookingsGeneral(bookings, userId);
             default:
                 return getAllBookingsGeneral(bookingRepository.findByItemOwnerIdAndStatusOrderByIdDesc(userId,
                                 stateFromString),
@@ -159,11 +156,8 @@ public class BookingService {
                                 currentDateTime),
                         userId);
             case ALL:
-                if (fromAndSizeCheck(from, size)) {
-                    List<Booking> bookings = bookingRepository.findAllByOrderByIdDesc(PageRequest.of(from, size));
-                    return getAllBookingsGeneral(bookings, userId);
-                }
-                return getAllBookingsGeneral(bookingRepository.findAllByBookerIdOrderByIdDesc(userId), userId);
+                List<Booking> bookings = bookingRepository.findAllByOrderByIdDesc(PageRequest.of(from, size));
+                return getAllBookingsGeneral(bookings, userId);
             default:
                 return getAllBookingsGeneral(bookingRepository.findAllByBookerIdAndStatusOrderByIdDesc(userId,
                                 stateFromString),
@@ -172,15 +166,10 @@ public class BookingService {
 
     }
 
-    private boolean fromAndSizeCheck(Integer from, Integer size) {
-        if (from != null && size != null) {
-            if (from < 0 || size < 1) {
-                throw new IncorrectDataException("Переданы некорректные данные");
-            } else {
-                return true;
-            }
+    private void fromAndSizeCheck(Integer from, Integer size) {
+        if (from < 0 || size < 1) {
+            throw new IncorrectDataException("Переданы некорректные данные");
         }
-        return false;
     }
 
     private List<BookingDto> getAllBookingsGeneral(List<Booking> bookingList, Long userId) {

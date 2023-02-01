@@ -100,7 +100,7 @@ public class ItemRequestServiceTest {
         itemRequestDto.setItems(List.of(itemDto));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(itemRepository.findByRequestIdIn(List.of(user.getId()))).thenReturn(itemList);
-        when(itemRequestRepository.findByRequesterId(user.getId())).thenReturn(List.of(itemRequest));
+        when(itemRequestRepository.findByRequesterIdOrderByCreatedDesc(user.getId())).thenReturn(List.of(itemRequest));
 
         List<ItemRequestDto> result = itemRequestService.getItemRequests(user.getId());
         assertEquals(result, List.of(itemRequestDto));
