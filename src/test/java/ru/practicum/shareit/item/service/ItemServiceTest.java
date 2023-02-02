@@ -173,7 +173,7 @@ public class ItemServiceTest {
         itemDto.setComments(List.of(new CommentDto(0L, "text", user.getName(), null)));
         Booking booking = new Booking(1L, now, tomorrow, itemToSave, user, BookingStatus.APPROVED);
         lenient().when(commentDtoMapper.commentToDto(comment)).thenReturn(commentDto);
-        when(itemRepository.findByOwnerIdOrderById(userId)).thenReturn(List.of(itemToSave));
+        when(itemRepository.findByOwnerIdOrderById(userId, PageRequest.of(0, 10))).thenReturn(List.of(itemToSave));
         when(bookingRepository.findByItemIdIn(List.of(itemToSave.getId()))).thenReturn(List.of(booking));
         when(commentRepository.findByItemIdIn(List.of(itemToSave.getId()))).thenReturn(List.of(comment));
 

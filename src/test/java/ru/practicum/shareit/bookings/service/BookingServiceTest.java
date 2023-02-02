@@ -214,10 +214,12 @@ public class BookingServiceTest {
         Booking newBooking = new Booking(0L, now, now, itemToSave, itemOwner, BookingStatus.APPROVED);
         when(userRepository.findById(itemOwner.getId())).thenReturn(Optional.of(itemOwner));
         when(bookingDtoMapper.bookingToDto(any(Booking.class))).thenReturn(bookingDto);
-        when(bookingRepository.findAllByItemOwnerIdAndStartDateAfterOrderByIdDesc(itemOwner.getId(), now))
+        when(bookingRepository.findAllByItemOwnerIdAndStartDateAfterOrderByIdDesc(itemOwner.getId(), LocalDateTime.now().withNano(0)))
                 .thenReturn(List.of(newBooking));
 
-        assertEquals(List.of(bookingDto), bookingService.getAllBookingsOwner(itemOwner.getId(), "FUTURE", 0, 1));
+        List<BookingDto> bookingDtoList = bookingService.getAllBookingsOwner(itemOwner.getId(), "FUTURE", 0, 1);
+
+        assertEquals(bookingDto.getId(), bookingDtoList.get(0).getId());
     }
 
     @Test

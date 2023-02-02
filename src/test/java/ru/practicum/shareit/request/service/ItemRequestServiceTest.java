@@ -123,7 +123,7 @@ public class ItemRequestServiceTest {
         when(itemRequestRepository.findAllByRequesterIdIsNot(user, PageRequest.of(0, 10))).thenReturn(List.of(itemRequest));
         when(itemRepository.findByRequestIdIn(List.of(user.getId()))).thenReturn(itemList);
 
-        List<ItemRequestDto> result = itemRequestService.getAllItemRequest(user.getId(), 0, 1);
+        List<ItemRequestDto> result = itemRequestService.getAllItemRequest(user.getId(), 0, 10);
 
         assertEquals(result, List.of(new ItemRequestDto(1L, "description", now, List.of(itemDto))));
         verify(itemRequestRepository).findAllByRequesterIdIsNot(user, PageRequest.of(0, 10));
