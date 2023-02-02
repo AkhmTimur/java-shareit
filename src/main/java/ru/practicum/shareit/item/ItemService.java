@@ -1,6 +1,7 @@
 package ru.practicum.shareit.item;
 
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.Booking;
@@ -87,9 +88,9 @@ public class ItemService {
         }
     }
 
-    public List<ItemDto> getAllItemsOfUser(Long userId) {
+    public List<ItemDto> getAllItemsOfUser(Long userId, Integer from, Integer size) {
         List<ItemDto> itemDtos = new ArrayList<>();
-        List<Item> itemList = itemRepository.findByOwnerIdOrderById(userId);
+        List<Item> itemList = itemRepository.findByOwnerIdOrderById(userId, PageRequest.of(from, size));
         List<Long> ids = itemList.stream().map(Item::getId).collect(Collectors.toList());
         List<Booking> bookingList = bookingRepository.findByItemIdIn(ids);
         Map<Long, List<Booking>> bookingMap = createItemBookingsMap(bookingList);
@@ -125,12 +126,12 @@ public class ItemService {
         }
     }
 
-    public List<ItemDto> searchForItem(String searchCriteria) {
+    public List<ItemDto> searchForItem(String searchCriteria, Integer from, Integer size) {
         List<ItemDto> itemDtos = new ArrayList<>();
         if (searchCriteria.isBlank()) {
             return Collections.emptyList();
         } else {
-            for (Item item : itemRepository.searchItems(searchCriteria)) {
+            for (Item item : itemRepository.searchItems(searchCriteria, PageRequest.of(from, size))) {
                 itemDtos.add(itemDtoMapper.itemToDto(item));
             }
             return itemDtos;

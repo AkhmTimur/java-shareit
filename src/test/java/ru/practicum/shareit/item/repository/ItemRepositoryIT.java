@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.PageRequest;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.ItemRequestRepository;
@@ -26,7 +27,7 @@ public class ItemRepositoryIT {
     private ItemRequestRepository itemRequestRepository;
     private User user = new User(null, "e@mail.ru", "name");
     private ItemRequest itemRequest = new ItemRequest("description", user);
-    private Item item =  new Item(null, "name", "description", true, user, itemRequest);
+    private Item item = new Item(null, "name", "description", true, user, itemRequest);
 
     @BeforeEach
     void setup() {
@@ -45,7 +46,7 @@ public class ItemRepositoryIT {
 
     @Test
     void searchItems() {
-        List<Item> itemList = itemRepository.searchItems("descr");
+        List<Item> itemList = itemRepository.searchItems("descr", PageRequest.of(0, 10));
 
         assertEquals(itemList, List.of(item));
     }

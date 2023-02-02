@@ -1,5 +1,6 @@
 package ru.practicum.shareit.request;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exceptions.DataNotFoundException;
 import ru.practicum.shareit.exceptions.IncorrectDataException;
@@ -57,7 +58,7 @@ public class ItemRequestService {
         }
         List<ItemRequest> itemRequests = Collections.emptyList();
         if (from != null && size != null) {
-            itemRequests = itemRequestRepository.findAllByRequesterIdIsNot(user);
+            itemRequests = itemRequestRepository.findAllByRequesterIdIsNot(user, PageRequest.of(from, size));
         }
         return getItemRequestDtos(itemRequests);
     }

@@ -1,5 +1,6 @@
 package ru.practicum.shareit.request;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import ru.practicum.shareit.request.model.ItemRequest;
@@ -11,5 +12,5 @@ public interface ItemRequestRepository extends JpaRepository<ItemRequest, Long> 
     List<ItemRequest> findByRequesterIdOrderByCreatedDesc(Long userId);
 
     @Query("select ir from ItemRequest ir where ir.requester <> ?1 order by ir.created desc")
-    List<ItemRequest> findAllByRequesterIdIsNot(User user);
+    List<ItemRequest> findAllByRequesterIdIsNot(User user, PageRequest of);
 }

@@ -93,7 +93,7 @@ public class ItemControllerIT {
     @Test
     void getAllItemsOfUser() {
         long userId = 0L;
-        when(itemService.getAllItemsOfUser(userId)).thenReturn(List.of(new ItemDto()));
+        when(itemService.getAllItemsOfUser(userId, 0, 10)).thenReturn(List.of(new ItemDto()));
 
         String result = mockMvc.perform(get("/items")
                         .contentType("application/json")
@@ -104,14 +104,14 @@ public class ItemControllerIT {
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(List.of(new ItemDto())), result);
-        verify(itemService).getAllItemsOfUser(userId);
+        verify(itemService).getAllItemsOfUser(userId, 0, 10);
     }
 
     @SneakyThrows
     @Test
     void searchForItem() {
         String text = "search";
-        when(itemService.searchForItem(text)).thenReturn(List.of(new ItemDto()));
+        when(itemService.searchForItem(text, 0, 10)).thenReturn(List.of(new ItemDto()));
 
         String result = mockMvc.perform(get("/items/search")
                         .contentType("application/json")
@@ -122,7 +122,7 @@ public class ItemControllerIT {
                 .getContentAsString();
 
         assertEquals(objectMapper.writeValueAsString(List.of(new ItemDto())), result);
-        verify(itemService).searchForItem(text);
+        verify(itemService).searchForItem(text, 0, 10);
     }
 
     @SneakyThrows

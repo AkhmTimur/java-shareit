@@ -57,9 +57,9 @@ public class ItemControllerTest {
     @Test
     void getAllItemsOfUser() {
         List<ItemDto> expectedItems = Collections.emptyList();
-        when(itemService.getAllItemsOfUser(anyLong())).thenReturn(expectedItems);
+        when(itemService.getAllItemsOfUser(anyLong(), anyInt(), anyInt())).thenReturn(expectedItems);
 
-        List<ItemDto> itemDtos = itemController.getAllItemsOfUser(0L);
+        List<ItemDto> itemDtos = itemController.getAllItemsOfUser(0L, 0, 10);
 
         assertEquals(expectedItems, itemDtos);
     }
@@ -67,9 +67,9 @@ public class ItemControllerTest {
     @Test
     void searchForItem() {
         List<ItemDto> expectedItems = Collections.emptyList();
-        when(itemService.searchForItem(anyString())).thenReturn(expectedItems);
+        when(itemService.searchForItem(anyString(), anyInt(), anyInt())).thenReturn(expectedItems);
 
-        List<ItemDto> itemDtos = itemController.searchForItem("search");
+        List<ItemDto> itemDtos = itemController.searchForItem("search", 0, 10);
 
         assertEquals(expectedItems, itemDtos);
     }

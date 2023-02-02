@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingDtoMapper;
@@ -176,7 +177,7 @@ public class ItemServiceTest {
         when(bookingRepository.findByItemIdIn(List.of(itemToSave.getId()))).thenReturn(List.of(booking));
         when(commentRepository.findByItemIdIn(List.of(itemToSave.getId()))).thenReturn(List.of(comment));
 
-        List<ItemDto> result = itemService.getAllItemsOfUser(userId);
+        List<ItemDto> result = itemService.getAllItemsOfUser(userId, 0, 10);
 
         assertEquals(expected, result);
     }
@@ -185,9 +186,9 @@ public class ItemServiceTest {
     void searchForItem_whenOk_thenReturnListDto() {
         String searchCriteria = "thing";
         List<ItemDto> expected = List.of(itemDto);
-        lenient().when(itemRepository.searchItems(searchCriteria)).thenReturn(List.of(itemToSave));
+        lenient().when(itemRepository.searchItems(searchCriteria, PageRequest.of(0, 10))).thenReturn(List.of(itemToSave));
 
-        List<ItemDto> result = itemService.searchForItem(searchCriteria);
+        List<ItemDto> result = itemService.searchForItem(searchCriteria, 0, 10);
 
         assertEquals(expected, result);
     }
@@ -196,9 +197,9 @@ public class ItemServiceTest {
     void searchForItem_whenCriteriaIsBlank_thenReturnEmptyList() {
         String searchCriteria = "";
         List<ItemDto> expected = Collections.emptyList();
-        lenient().when(itemRepository.searchItems(searchCriteria)).thenReturn(Collections.emptyList());
+        lenient().when(itemRepository.searchItems(searchCriteria, PageRequest.of(0, 10))).thenReturn(Collections.emptyList());
 
-        List<ItemDto> result = itemService.searchForItem(searchCriteria);
+        List<ItemDto> result = itemService.searchForItem(searchCriteria, 0, 10);
 
         assertEquals(expected, result);
     }

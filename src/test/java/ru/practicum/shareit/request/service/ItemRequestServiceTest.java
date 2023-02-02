@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 import ru.practicum.shareit.exceptions.DataNotFoundException;
 import ru.practicum.shareit.exceptions.IncorrectDataException;
 import ru.practicum.shareit.item.ItemRepository;
@@ -119,13 +120,13 @@ public class ItemRequestServiceTest {
     void getAllItemRequest_whenUserExistsAndCorrectPaginationData_thenReturnListItemRequestDto() {
         List<Item> itemList = List.of(itemToSave);
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(itemRequestRepository.findAllByRequesterIdIsNot(user)).thenReturn(List.of(itemRequest));
+        when(itemRequestRepository.findAllByRequesterIdIsNot(user, PageRequest.of(0, 10))).thenReturn(List.of(itemRequest));
         when(itemRepository.findByRequestIdIn(List.of(user.getId()))).thenReturn(itemList);
 
         List<ItemRequestDto> result = itemRequestService.getAllItemRequest(user.getId(), 0, 1);
 
         assertEquals(result, List.of(new ItemRequestDto(1L, "description", now, List.of(itemDto))));
-        verify(itemRequestRepository).findAllByRequesterIdIsNot(user);
+        verify(itemRequestRepository).findAllByRequesterIdIsNot(user, PageRequest.of(0, 10));
     }
 
     @Test
