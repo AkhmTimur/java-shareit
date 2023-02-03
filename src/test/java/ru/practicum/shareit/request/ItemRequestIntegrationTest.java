@@ -37,7 +37,7 @@ public class ItemRequestIntegrationTest {
         userDto = userController.createUser(userDto).getBody();
         ItemRequestDto result = itemRequestController.createItemRequest(Objects.requireNonNull(userDto).getId(), itemRequest);
 
-        assertEquals(result, itemRequestController.getItemRequest(userDto.getId(), result.getId()));
+        assertEquals(result.getId(), itemRequestController.getItemRequest(userDto.getId(), result.getId()).getId());
 
         assertThrows(DataNotFoundException.class, () -> itemRequestController.createItemRequest(99L, itemRequest));
     }

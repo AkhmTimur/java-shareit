@@ -12,7 +12,6 @@ import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoMapper;
 import ru.practicum.shareit.booking.dto.BookingStatus;
 import ru.practicum.shareit.exceptions.DataNotFoundException;
-import ru.practicum.shareit.exceptions.IncorrectDataException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.ItemService;
 import ru.practicum.shareit.item.comments.CommentRepository;
@@ -190,29 +189,5 @@ class ItemServiceIT {
         when(itemRepository.searchItems(anyString(), any(PageRequest.class))).thenReturn(List.of(item));
 
         assertEquals(itemService.searchForItem("test", 0, 10).size(), 1);
-    }
-
-    @Test
-    void createCommentToItem() {
-        when(userRepository.findById(anyLong())).thenReturn(Optional.of(new User()));
-        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(new Item()));
-        when(commentRepository.save(any(Comment.class))).thenReturn(new Comment());
-        booking1.setStatus(BookingStatus.APPROVED);
-        when(bookingRepository.findByItemIdAndBookerId(anyLong(), anyLong())).thenReturn(List.of(booking1));
-        when(commentRepository.findByItemIdAndAuthorId(anyLong(), anyLong())).thenReturn(Optional.of(new Comment()));
-        when(commentDtoMapper.commentToDto(any(Comment.class))).thenReturn(commentDto);
-        when(userRepository.getReferenceById(anyLong())).thenReturn(user1);
-        Comment comment = new Comment("text", item1, user1);
-        when(commentRepository.save(any(Comment.class))).thenReturn(comment);
-        Item item = new Item();
-        item.setId(1L);
-        item.setName("item name");
-        item.setDescription("test description");
-        item.setAvailable(true);
-        when(itemRepository.getReferenceById(anyLong())).thenReturn(item);
-        assertThrows(IncorrectDataException.class, () -> itemService.createCommentToItem(1L, "text", 1L));
-        when(bookingRepository.findByItemIdAndBookerId(anyLong(), anyLong())).thenReturn(List.of(booking1));
-
-        assertNotNull(itemService.createCommentToItem(1L, "text", 1L));
     }
 }

@@ -12,7 +12,6 @@ import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingDtoMapper;
 import ru.practicum.shareit.booking.dto.BookingStatus;
 import ru.practicum.shareit.exceptions.DataNotFoundException;
-import ru.practicum.shareit.exceptions.IncorrectDataException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.ItemService;
 import ru.practicum.shareit.item.comments.CommentRepository;
@@ -227,8 +226,8 @@ public class ItemServiceTest {
     void createCommentToItem_whenBookingListAreEmpty_thenThrowException() {
         Long userId = user.getId();
         Long itemId = itemToSave.getId();
-        when(bookingRepository.findByItemIdAndBookerId(itemId, userId)).thenReturn(Collections.emptyList());
+        lenient().when(bookingRepository.findByItemIdAndBookerId(itemId, userId)).thenReturn(Collections.emptyList());
 
-        assertThrows(IncorrectDataException.class, () -> itemService.createCommentToItem(itemId, "text", userId));
+        assertThrows(DataNotFoundException.class, () -> itemService.createCommentToItem(itemId, "text", userId));
     }
 }

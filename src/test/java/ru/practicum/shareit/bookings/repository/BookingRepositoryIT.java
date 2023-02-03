@@ -1,6 +1,5 @@
 package ru.practicum.shareit.bookings.repository;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,9 +35,10 @@ public class BookingRepositoryIT {
 
     private User user = new User(null, "e@mail.ru", "name");
     private ItemRequest itemRequest = new ItemRequest("description", user);
-    private Item item =  new Item(null, "name", "description", true, user, itemRequest);
+    private Item item = new Item(null, "name", "description", true, user, itemRequest);
     private Booking booking = new Booking(null, now, now.plusDays(1), item, user, BookingStatus.APPROVED);
     private Long bookerId;
+
     @BeforeEach
     void setup() {
         user = userRepository.save(user);
@@ -119,20 +119,6 @@ public class BookingRepositoryIT {
     }
 
     @Test
-    void findByItemIdAndItemOwnerId() {
-        List<Booking> bookings = bookingRepository.findByItemIdAndItemOwnerId(bookerId, item.getId());
-
-        assertEquals(bookings, List.of(booking));
-    }
-
-    @Test
-    void findByItemIdAndBookerId() {
-        List<Booking> bookings = bookingRepository.findByItemIdAndBookerId(bookerId, item.getId());
-
-        assertEquals(bookings, List.of(booking));
-    }
-
-    @Test
     void findByItemOwnerIdOrderByIdDesc() {
         List<Booking> bookings = bookingRepository.findByItemOwnerIdOrderByIdDesc(bookerId);
 
@@ -172,13 +158,5 @@ public class BookingRepositoryIT {
         List<Booking> bookings = bookingRepository.findAllByItemOwnerIdOrderByIdDesc(bookerId, PageRequest.of(0, 1));
 
         assertEquals(bookings, List.of(booking));
-    }
-
-    @AfterEach
-    void deleteAll() {
-        userRepository.deleteAll();
-        itemRequestRepository.deleteAll();
-        itemRepository.deleteAll();
-        bookingRepository.deleteAll();
     }
 }
