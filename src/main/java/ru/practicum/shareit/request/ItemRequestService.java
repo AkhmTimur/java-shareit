@@ -53,13 +53,11 @@ public class ItemRequestService {
 
     public List<ItemRequestDto> getAllItemRequest(Long userId, Integer from, Integer size) {
         User user = userRepository.findById(userId).orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
-        if (from != null && size != null && (from < 0 || size < 1)) {
+        if (from < 0 || size < 1) {
             throw new IncorrectDataException("Переданы некорректные данные");
         }
-        List<ItemRequest> itemRequests = Collections.emptyList();
-        if (from != null && size != null) {
-            itemRequests = itemRequestRepository.findAllByRequesterIdIsNot(user, PageRequest.of(from, size));
-        }
+        List<ItemRequest> itemRequests;
+        itemRequests = itemRequestRepository.findAllByRequesterIdIsNot(user, PageRequest.of(from, size));
         return getItemRequestDtos(itemRequests);
     }
 
@@ -69,15 +67,11 @@ public class ItemRequestService {
                 .map(itemRequestDtoMapper::itemRequestToDto)
                 .collect(Collectors.toList());
         List<Long> ids = itemRequests.stream().map(ItemRequest::getId).collect(Collectors.toList());
-        List<ItemDto> itemDtos = itemRepository.findByRequestIdIn(ids)
+        Map<Long, List<ItemDto>> itemDtos = itemRepository.findByRequestIdIn(ids)
                 .stream()
-                .map(itemDtoMapper::itemToDto)
-                .collect(Collectors.toList());
+                .map(itemDtoMapper::itemToDto).collect(Collectors.groupingBy(ItemDto::getRequestId));
         for (ItemRequestDto itemRequestDto : result) {
-            Map<Long, List<ItemDto>> items = itemDtos
-                    .stream()
-                    .collect(Collectors.groupingBy(ItemDto::getRequestId));
-            itemRequestDto.setItems(items.getOrDefault(itemRequestDto.getId(), Collections.emptyList()));
+            itemRequestDto.setItems(itemDtos.getOrDefault(itemRequestDto.getId(), Collections.emptyList()));
         }
         return result;
     }

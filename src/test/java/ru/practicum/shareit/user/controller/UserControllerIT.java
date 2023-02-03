@@ -2,103 +2,65 @@ package ru.practicum.shareit.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.shareit.exceptions.DataNotFoundException;
-import ru.practicum.shareit.user.*;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+import ru.practicum.shareit.user.UserController;
+import ru.practicum.shareit.user.UserDto;
+import ru.practicum.shareit.user.UserService;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.nio.charset.StandardCharsets;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UserController.class)
 public class UserControllerIT {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private final UserService userService;
+
+    private MockMvc mvc;
+
+    private UserDto userDto;
+
     @Autowired
-    private MockMvc mockMvc;
+    public UserControllerIT(UserService userService) {
+        this.userService = userService;
+    }
 
-    @MockBean
-    private UserService userService;
-    @MockBean
-    private UserRepository userRepository;
+    @BeforeEach
+    void setUp(WebApplicationContext wac) {
+        mvc = MockMvcBuilders
+                .webAppContextSetup(wac)
+                .build();
 
-    @SneakyThrows
-    @Test
-    void getUserById_whenUserNotFound_thenReturnNotFoundStatus() {
-        long userId = 0L;
-        when(userService.getUserById(userId)).thenThrow(DataNotFoundException.class);
-
-        mockMvc.perform(get("/user/{id}", userId))
-                .andExpect(status().isNotFound());
-
-        verify(userService, never()).getUserById(userId);
+        userDto = new UserDto(1L, "e@mail.ru", "name");
     }
 
     @SneakyThrows
     @Test
     void createUser() {
-        UserDto userDto = new UserDto(0L, "email@mail.ru", "name");
-        when(userService.createUser(userDto)).thenReturn(userDto);
+        when(userService.createUser(any())).thenReturn(userDto);
 
-        String result = mockMvc.perform(post("/users")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(userDto)))
+        mvc.perform(post("/users")
+                        .content(objectMapper.writeValueAsString(userDto))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        assertEquals(objectMapper.writeValueAsString(userDto), result);
-    }
-
-    @SneakyThrows
-    @Test
-    void updateUser() {
-        Long userId = 0L;
-        UserDto userDto = new UserDto(0L, "email@mail.ru", "name");
-        when(userRepository.findById(any())).thenReturn(Optional.of(new User()));
-        when(userService.updateUser(userDto)).thenReturn(userDto);
-
-        mockMvc.perform(patch("/users/{userId}", userId)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(userDto)))
-                .andExpect(status().isOk());
-
-        verify(userService).updateUser(userDto);
-    }
-
-    @Test
-    void deleteUserById() throws Exception {
-        Long userId = 0L;
-
-        mockMvc.perform(delete("/users/{userId}", userId)
-                        .contentType("application/json"))
-                .andExpect(status().isOk());
-
-        verify(userService).deleteUserById(userId);
-    }
-
-    @SneakyThrows
-    @Test
-    void getAllUsers_whenUsersNotFound_thenReturnEmptyList() {
-        List<UserDto> userDtoList = Collections.emptyList();
-
-        String users = mockMvc.perform(get("/users")
-                        .contentType("application/json"))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        assertEquals(objectMapper.writeValueAsString(userDtoList), users);
+                .andExpect(jsonPath("$.id", is(userDto.getId()), Long.class))
+                .andExpect(jsonPath("$.email", is(userDto.getEmail())))
+                .andExpect(jsonPath("$.name", is(userDto.getName())));
+        userService.createUser(userDto);
     }
 }

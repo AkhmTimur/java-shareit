@@ -68,24 +68,20 @@ public class ItemService {
     }
 
     public ItemDto getItemById(Long itemId, Long userId) {
-        Optional<Item> item = itemRepository.findById(itemId);
-        if (item.isPresent()) {
-            ItemDto itemDto = itemDtoMapper.itemToDto(item.get());
-            if (item.get().getOwner().getId().equals(userId)) {
-                List<Booking> bookingList = bookingRepository.findByItemIdAndItemOwnerId(itemId, userId)
-                        .stream()
-                        .filter(b -> !b.getStatus().equals(BookingStatus.REJECTED))
-                        .collect(Collectors.toList());
-                Map<Long, List<Booking>> bookingMap = createItemBookingsMap(bookingList);
-                List<Comment> comments = commentRepository.findByItemId(item.get().getId());
-                List<CommentDto> commentDtos = comments.stream().map(commentDtoMapper::commentToDto).collect(Collectors.toList());
-                itemDto.setComments(commentDtos);
-                addLastAndNextBookingToItem(itemDto, bookingMap.get(itemDto.getId()));
-            }
-            return itemDto;
-        } else {
-            throw new DataNotFoundException("Предмет не найден");
+        Item item = itemRepository.findById(itemId).orElseThrow(() -> new DataNotFoundException("Предмет не найден"));
+        ItemDto itemDto = itemDtoMapper.itemToDto(item);
+        if (item.getOwner().getId().equals(userId)) {
+            List<Booking> bookingList = bookingRepository.findByItemIdAndItemOwnerId(itemId, userId)
+                    .stream()
+                    .filter(b -> !b.getStatus().equals(BookingStatus.REJECTED))
+                    .collect(Collectors.toList());
+            Map<Long, List<Booking>> bookingMap = createItemBookingsMap(bookingList);
+            List<Comment> comments = commentRepository.findByItemId(item.getId());
+            List<CommentDto> commentDtos = comments.stream().map(commentDtoMapper::commentToDto).collect(Collectors.toList());
+            itemDto.setComments(commentDtos);
+            addLastAndNextBookingToItem(itemDto, bookingMap.get(itemDto.getId()));
         }
+        return itemDto;
     }
 
     public List<ItemDto> getAllItemsOfUser(Long userId, Integer from, Integer size) {
@@ -170,20 +166,24 @@ public class ItemService {
     @Transactional
     public CommentDto createCommentToItem(Long itemId, String text, Long userId) {
         LocalDateTime currentDateTime = LocalDateTime.now();
-        Optional<Item> item = itemRepository.findById(itemId);
-        Optional<User> user = userRepository.findById(userId);
-        List<Booking> bookingList = bookingRepository.findByItemIdAndBookerId(itemId, userId)
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new DataNotFoundException("Предмет не найден"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
+        List<Booking> axd = bookingRepository.findByItemIdAndBookerId(itemId, userId);
+        List<Booking> xd = axd
                 .stream()
-                .filter(b -> b.getStatus().equals(BookingStatus.APPROVED))
+                .filter(b -> b.getStatus().equals(BookingStatus.APPROVED)).collect(Collectors.toList());
+        List<Booking> bookingList = xd.stream()
                 .filter(b -> b.getEndDate().isBefore(currentDateTime))
                 .collect(Collectors.toList());
         CommentDto result = null;
         if (bookingList.size() > 0) {
-            if (item.isPresent() && user.isPresent() && !text.isBlank()) {
-                Optional<Comment> commentByItemAndUser = commentRepository.findByItemIdAndAuthorId(item.get().getId(),
-                        user.get().getId());
+            if (!text.isBlank()) {
+                Optional<Comment> commentByItemAndUser = commentRepository.findByItemIdAndAuthorId(item.getId(),
+                        user.getId());
                 if (commentByItemAndUser.isEmpty()) {
-                    Comment comment = new Comment(text, item.get(), user.get());
+                    Comment comment = new Comment(text, item, user);
                     Comment c = commentRepository.save(comment);
                     result = commentDtoMapper.commentToDto(c);
                 }
