@@ -1,5 +1,6 @@
 package ru.practicum.shareit.booking;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -18,8 +19,6 @@ import ru.practicum.shareit.user.UserRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
@@ -44,8 +43,10 @@ public class BookingService {
 
     @Transactional
     public BookingDto createBooking(BookingInDto bookingInDto, Long bookerId) {
-        LocalDateTime currentDateTime = LocalDateTime.now();
+        LocalDateTime currentDateTime = LocalDateTime.now().withNano(0);
         Item item = itemRepository.findById(bookingInDto.getItemId())
+                .orElseThrow(() -> new DataNotFoundException("Предмет не найден"));
+        User user = userRepository.findById(bookerId)
                 .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
         BookingDto bookingDto = bookingDtoMapper.inDtoToDto(bookingInDto);
         List<Booking> itemBookings = bookingRepository.findByItemId(bookingDto.getItemId());
@@ -55,12 +56,11 @@ public class BookingService {
             }
             throw new IncorrectDataException("Переданы неверные данные");
         }
-        User user = userRepository.findById(bookerId)
-                .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
+
         if (!item.getOwner().getId().equals(bookerId)) {
             bookingDto.setItem(itemDtoMapper.itemToDto(item));
             if (
-                    checkItemIsAvailable(bookingDto.getItem().getId())
+                    checkItemIsAvailable(item)
                             && !bookingDto.getEnd().isBefore(bookingDto.getStart())
                             && !bookingDto.getStart().isBefore(currentDateTime)
             ) {
@@ -91,15 +91,13 @@ public class BookingService {
         } else {
             booking.setStatus(BookingStatus.REJECTED);
         }
-        Booking booking1 = bookingRepository.save(booking);
-        return bookingDtoMapper.bookingToDto(booking1);
+        return bookingDtoMapper.bookingToDto(bookingRepository.save(booking));
     }
 
     public BookingDto getBooking(Long userId, Long bookingId) {
         Booking bookingOwner = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new DataNotFoundException("Переданы некорректные данные"));
-        Item item;
-        item = itemRepository.findById(bookingOwner.getItem().getId())
+        Item item = itemRepository.findById(bookingOwner.getItem().getId())
                 .orElseThrow(() -> new DataNotFoundException("Переданы некорректные данные"));
         if (item.getOwner().getId().equals(userId)
                 || bookingOwner.getBooker().getId().equals(userId)) {
@@ -109,8 +107,9 @@ public class BookingService {
         }
     }
 
-    public List<BookingDto> getAllBookingsOwner(Long userId, String state) {
-        LocalDateTime currentDateTime = LocalDateTime.now();
+    public List<BookingDto> getAllBookingsOwner(Long userId, String state, Integer from, Integer size) {
+        fromAndSizeCheck(from, size);
+        LocalDateTime currentDateTime = LocalDateTime.now().withNano(0);
         BookingStatus stateFromString = stateToStatus(state);
         switch (stateFromString) {
             case FUTURE:
@@ -128,7 +127,8 @@ public class BookingService {
                                 currentDateTime),
                         userId);
             case ALL:
-                return getAllBookingsGeneral(bookingRepository.findByItemOwnerIdOrderByIdDesc(userId), userId);
+                List<Booking> bookings = bookingRepository.findAllByItemOwnerIdOrderByIdDesc(userId, PageRequest.of(from, size));
+                return getAllBookingsGeneral(bookings, userId);
             default:
                 return getAllBookingsGeneral(bookingRepository.findByItemOwnerIdAndStatusOrderByIdDesc(userId,
                                 stateFromString),
@@ -136,8 +136,9 @@ public class BookingService {
         }
     }
 
-    public List<BookingDto> getAllBookings(Long userId, String state) {
-        LocalDateTime currentDateTime = LocalDateTime.now();
+    public List<BookingDto> getAllBookings(Long userId, String state, Integer from, Integer size) {
+        fromAndSizeCheck(from, size);
+        LocalDateTime currentDateTime = LocalDateTime.now().withNano(0);
         BookingStatus stateFromString = stateToStatus(state);
         switch (stateFromString) {
             case FUTURE:
@@ -155,11 +156,19 @@ public class BookingService {
                                 currentDateTime),
                         userId);
             case ALL:
-                return getAllBookingsGeneral(bookingRepository.findAllByBookerIdOrderByIdDesc(userId), userId);
+                List<Booking> bookings = bookingRepository.findAllByOrderByIdDesc(PageRequest.of(from, size));
+                return getAllBookingsGeneral(bookings, userId);
             default:
                 return getAllBookingsGeneral(bookingRepository.findAllByBookerIdAndStatusOrderByIdDesc(userId,
                                 stateFromString),
                         userId);
+        }
+
+    }
+
+    private void fromAndSizeCheck(Integer from, Integer size) {
+        if (from < 0 || size < 1) {
+            throw new IncorrectDataException("Переданы некорректные данные");
         }
     }
 
@@ -195,8 +204,11 @@ public class BookingService {
         return stateFromString;
     }
 
-    private boolean checkItemIsAvailable(Long itemId) {
-        return Objects.requireNonNull(itemRepository.findById(itemId).orElse(null)).getAvailable();
+    private boolean checkItemIsAvailable(Item item) {
+        if (item != null) {
+            return item.getAvailable();
+        }
+        return false;
     }
 
     private List<BookingDto> getBookingListByState(List<Booking> bookingList) {

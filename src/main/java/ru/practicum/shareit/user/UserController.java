@@ -1,6 +1,8 @@
 package ru.practicum.shareit.user;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.exceptions.DataNotFoundException;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -19,19 +21,19 @@ public class UserController {
     }
 
     @PostMapping
-    public UserDto createUser(@Valid @RequestBody UserDto userDto) {
-        return userService.createUser(userDto);
+    public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDto) {
+        return ResponseEntity.ok(userService.createUser(userDto));
     }
 
     @PatchMapping("/{userId}")
-    public UserDto updateUser(@PathVariable Long userId, @RequestBody UserDto userDto) {
+    public ResponseEntity<UserDto> updateUser(@PathVariable Long userId, @RequestBody UserDto userDto) {
         userDto.setId(userId);
-        return userService.updateUser(userDto);
+        return ResponseEntity.ok(userService.updateUser(userDto));
     }
 
     @GetMapping("/{userId}")
-    public UserDto getUserById(@PathVariable Long userId) {
-        return userService.getUserById(userId);
+    public ResponseEntity<UserDto> getUserById(@PathVariable Long userId) {
+        return ResponseEntity.ok(userService.getUserById(userId));
     }
 
     @DeleteMapping("/{userId}")
@@ -40,7 +42,7 @@ public class UserController {
     }
 
     @GetMapping
-    public List<UserDto> getAllUsers() {
-        return userService.getAllUsers();
+    public ResponseEntity<List<UserDto>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 }

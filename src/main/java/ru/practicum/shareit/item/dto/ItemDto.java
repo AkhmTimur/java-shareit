@@ -1,7 +1,10 @@
 package ru.practicum.shareit.item.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.item.comments.dto.CommentDto;
 
@@ -13,6 +16,9 @@ import java.util.List;
  * TODO Sprint add-controllers.
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ItemDto {
     private Long id;
     @NotBlank
@@ -26,13 +32,15 @@ public class ItemDto {
     private BookingDto lastBooking;
     private BookingDto nextBooking;
     private List<CommentDto> comments;
+    private Long requestId;
 
-    public ItemDto(Long id, String name, String description, Boolean available, Long ownerId, List<CommentDto> comments) {
+    public ItemDto(Long id, String name, String description, Boolean available, Long ownerId, List<CommentDto> comments, Long requestId) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.available = available;
         this.ownerId = ownerId;
         this.comments = comments;
+        this.requestId = requestId;
     }
 }
