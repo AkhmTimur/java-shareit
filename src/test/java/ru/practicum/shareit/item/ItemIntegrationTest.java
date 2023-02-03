@@ -100,9 +100,7 @@ public class ItemIntegrationTest {
         userController.createUser(userDto);
         itemController.createItem(userDto.getId(), itemDto);
         itemDto.setComments(Collections.emptyList());
-        ItemDto itemDto1 = new ItemDto();
-        itemDto1.setId(2L);
-        itemDto1.setName("newItemDto");
+        ItemDto itemDto1 = ItemDto.builder().id(2L).name("newItemDto").description("itemDesc").available(true).ownerId(userDto.getId()).comments(List.of(new CommentDto())).build();
         itemController.createItem(userDto.getId(), itemDto1);
         itemDto1.setComments(Collections.emptyList());
 
