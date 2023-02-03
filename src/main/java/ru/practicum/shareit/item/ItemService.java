@@ -170,11 +170,9 @@ public class ItemService {
                 .orElseThrow(() -> new DataNotFoundException("Предмет не найден"));
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new DataNotFoundException("Пользователь не найден"));
-        List<Booking> axd = bookingRepository.findByItemIdAndBookerId(itemId, userId);
-        List<Booking> xd = axd
+        List<Booking> bookingList = bookingRepository.findByItemIdAndBookerId(itemId, userId)
                 .stream()
-                .filter(b -> b.getStatus().equals(BookingStatus.APPROVED)).collect(Collectors.toList());
-        List<Booking> bookingList = xd.stream()
+                .filter(b -> b.getStatus().equals(BookingStatus.APPROVED))
                 .filter(b -> b.getEndDate().isBefore(currentDateTime))
                 .collect(Collectors.toList());
         CommentDto result = null;
