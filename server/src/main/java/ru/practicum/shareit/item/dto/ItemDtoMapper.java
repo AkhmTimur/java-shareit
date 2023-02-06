@@ -7,13 +7,11 @@ import ru.practicum.shareit.item.comments.dto.CommentDtoMapper;
 import ru.practicum.shareit.item.comments.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.ItemRequestRepository;
-import ru.practicum.shareit.request.ItemRequestService;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.User;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -35,7 +33,7 @@ public class ItemDtoMapper {
             commentList = commentDtoList.stream().map(commentDtoMapper::commentToDto).collect(Collectors.toList());
         }
         Long requestId = null;
-        if(item.getRequest() != null) {
+        if (item.getRequest() != null) {
             requestId = item.getRequest().getId();
         }
         return new ItemDto(
@@ -51,7 +49,7 @@ public class ItemDtoMapper {
 
     public Item dtoToItem(ItemDto itemDto, User user) {
         ItemRequest itemRequest;
-        if(itemDto.getRequestId() != null) {
+        if (itemDto.getRequestId() != null) {
             itemRequest = itemRequestRepository.findById(itemDto.getRequestId()).orElse(null);
         } else {
             itemRequest = null;
