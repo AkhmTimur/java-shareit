@@ -20,7 +20,7 @@ public class UserController {
 
     @PatchMapping("/{userId}")
     public ResponseEntity<Object> updateUser(@PathVariable long userId, @RequestBody UserDto userDto) {
-        return userClient.updateUser(userId ,userDto);
+        return userClient.updateUser(userId, userDto);
     }
 
     @GetMapping("/{userId}")
