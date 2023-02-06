@@ -1,4 +1,4 @@
-package ru.practicum.shareit.user.item;
+package ru.practicum.shareit.item;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,8 +8,8 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import ru.practicum.shareit.client.BaseClient;
-import ru.practicum.shareit.user.item.comment.dto.CommentDto;
-import ru.practicum.shareit.user.item.dto.ItemDto;
+import ru.practicum.shareit.item.comment.dto.CommentDto;
+import ru.practicum.shareit.item.dto.ItemDto;
 
 import java.util.Map;
 

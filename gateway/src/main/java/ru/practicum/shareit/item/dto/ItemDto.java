@@ -1,4 +1,4 @@
-package ru.practicum.shareit.user.item.dto;
+package ru.practicum.shareit.item.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.practicum.shareit.booking.dto.BookingDto;
-import ru.practicum.shareit.user.item.comment.dto.CommentDto;
+import ru.practicum.shareit.item.comment.dto.CommentDto;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
