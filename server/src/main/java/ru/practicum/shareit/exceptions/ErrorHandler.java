@@ -26,11 +26,4 @@ public class ErrorHandler {
         log.debug("Запрос не поддерживается" + e.getMessage());
         return Map.of("error", e.getMessage());
     }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public Map<String, String> handleUserAlreadyExistException(final DataConflictException e) {
-        log.trace("Пользователь уже создан" + e.getMessage());
-        return Map.of("Запрос не поддерживается", e.getMessage());
-    }
 }
