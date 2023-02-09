@@ -41,7 +41,7 @@ public class UserServiceTest {
     void createUser_whenUserValid_thenSaveUser() {
         when(userRepository.save(any(User.class))).thenReturn(userToSave);
 
-        UserDto actualUser = userService.createUser(userDtoMapper.userToDto(userToSave));
+        UserDto actualUser = userService.createUser(userDto);
 
         assertEquals(userToSave.getEmail(), actualUser.getEmail());
         assertEquals(userToSave.getName(), actualUser.getName());

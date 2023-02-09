@@ -6,6 +6,7 @@ import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.item.comments.dto.CommentDto;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * TODO Sprint add-controllers.
@@ -35,5 +36,18 @@ public class ItemDto {
         this.ownerId = ownerId;
         this.comments = comments;
         this.requestId = requestId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ItemDto)) return false;
+        ItemDto itemDto = (ItemDto) o;
+        return Objects.equals(id, itemDto.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

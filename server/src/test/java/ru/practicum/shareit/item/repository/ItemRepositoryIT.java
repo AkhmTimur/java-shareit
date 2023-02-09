@@ -1,6 +1,5 @@
 package ru.practicum.shareit.item.repository;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,11 +57,5 @@ public class ItemRepositoryIT {
         List<Item> itemList = itemRepository.findByRequestIdIn(List.of(itemRequestId));
 
         assertEquals(itemList, List.of(item));
-    }
-
-    @AfterEach
-    void deleteAll() {
-        userRepository.deleteAll();
-        itemRepository.deleteAll();
     }
 }
