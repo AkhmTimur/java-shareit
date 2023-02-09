@@ -26,7 +26,7 @@ public class ItemRequestControllerTest {
     private ItemRequestController itemRequestController;
 
     @Test
-    void createItemRequest () {
+    void createItemRequest() {
         ItemRequestDto itemRequestDto = new ItemRequestDto();
         when(itemRequestService.createItemRequest(anyLong(), any())).thenReturn(itemRequestDto);
 

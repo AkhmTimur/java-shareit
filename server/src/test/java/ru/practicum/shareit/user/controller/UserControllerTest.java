@@ -67,7 +67,7 @@ public class UserControllerTest {
     }
 
     @Test
-    void getAllUsers_whenInvoked_thenStatusOkAndUsersCollectionInBody(){
+    void getAllUsers_whenInvoked_thenStatusOkAndUsersCollectionInBody() {
         List<UserDto> expectedUsers = List.of(new UserDto());
         when(userService.getAllUsers()).thenReturn(expectedUsers);
 
