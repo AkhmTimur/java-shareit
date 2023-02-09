@@ -1,4 +1,4 @@
-package java.ru.practicum.shareit.bookings.controller;
+package ru.practicum.shareit.bookings.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
