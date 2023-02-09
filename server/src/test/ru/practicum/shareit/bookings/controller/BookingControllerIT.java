@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -47,7 +49,7 @@ public class BookingControllerIT {
         Long userId = 0L;
         BookingInDto bookingInDto = new BookingInDto();
         BookingDto bookingDto = new BookingDto();
-        when(bookingService.createBooking(bookingInDto, userId)).thenReturn(bookingDto);
+        when(bookingService.createBooking(any(BookingInDto.class), anyLong())).thenReturn(new BookingDto());
 
         String result = mockMvc.perform(post("/bookings")
                         .contentType("application/json")
